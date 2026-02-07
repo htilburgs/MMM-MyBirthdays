@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <title>MyBirthdays Beheer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>MyBirthdays Beheer</h1>
+
+    <h2>Verjaardagen</h2>
+    <table id="birthdayTable">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Naam</th>
+                <th>Datum</th>
+                <th>Acties</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <h2>Nieuwe verjaardag toevoegen</h2>
+    <form id="addForm">
+        <input type="text" id="newName" placeholder="Naam" required>
+        <input type="date" id="newDate" required>
+        <button type="submit">Toevoegen</button>
+    </form>
+
+    <script src="app.js"></script>
+</body>
+</html>
