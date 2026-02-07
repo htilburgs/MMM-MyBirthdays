@@ -5,16 +5,19 @@ const express = require("express");
 const bodyParser = require("body-parser");
 
 module.exports = NodeHelper.create({
-    start: function () {
+    start() {
         console.log("Starting node helper for: " + this.name);
         this.config = {};
         this.interval = null;
         this.birthdays = [];
 
-        // Start express server
+        // Express server
         this.app = express();
         this.app.use(bodyParser.json());
         this.port = 3123;
+
+        // Serve static webpagina
+        this.app.use("/", express.static(path.join(__dirname, "web")));
 
         this.setupRoutes();
 
@@ -23,7 +26,7 @@ module.exports = NodeHelper.create({
         });
     },
 
-    socketNotificationReceived: function (notification, payload) {
+    socketNotificationReceived(notification, payload) {
         if (notification === "MYBIRTHDAYS_CONFIG") {
             this.config = payload;
             this.loadBirthdays();
@@ -33,11 +36,11 @@ module.exports = NodeHelper.create({
         }
     },
 
-    getJsonPath: function () {
+    getJsonPath() {
         return path.join(__dirname, this.config.jsonFile || "MyBirthdays.json");
     },
 
-    loadBirthdays: function () {
+    loadBirthdays() {
         const jsonPath = this.getJsonPath();
 
         fs.readFile(jsonPath, "utf8", (err, data) => {
@@ -75,7 +78,7 @@ module.exports = NodeHelper.create({
         });
     },
 
-    saveBirthdays: function () {
+    saveBirthdays() {
         const jsonPath = this.getJsonPath();
         fs.writeFile(jsonPath, JSON.stringify(this.birthdays, null, 4), err => {
             if (err) console.error(this.name + ": Kan MyBirthdays.json niet opslaan", err);
@@ -83,38 +86,33 @@ module.exports = NodeHelper.create({
         });
     },
 
-    setupRoutes: function () {
-        // Alle verjaardagen ophalen
-        this.app.get("/birthdays", (req, res) => {
-            res.json(this.birthdays);
-        });
+    setupRoutes() {
+        // API: ophalen
+        this.app.get("/birthdays", (req, res) => res.json(this.birthdays));
 
-        // Nieuwe verjaardag toevoegen
+        // API: toevoegen
         this.app.post("/birthdays", (req, res) => {
             const { name, date } = req.body;
-            if (!name || !date) return res.status(400).json({ error: "name en date zijn verplicht" });
-
+            if (!name || !date) return res.status(400).json({ error: "name en date verplicht" });
             this.birthdays.push({ name, date });
             this.saveBirthdays();
             res.json({ success: true });
         });
 
-        // Verjaardag wijzigen
+        // API: wijzigen
         this.app.put("/birthdays/:index", (req, res) => {
             const index = parseInt(req.params.index);
             const { name, date } = req.body;
-
             if (isNaN(index) || index < 0 || index >= this.birthdays.length)
                 return res.status(400).json({ error: "Ongeldige index" });
 
             if (name) this.birthdays[index].name = name;
             if (date) this.birthdays[index].date = date;
-
             this.saveBirthdays();
             res.json({ success: true });
         });
 
-        // Verjaardag verwijderen
+        // API: verwijderen
         this.app.delete("/birthdays/:index", (req, res) => {
             const index = parseInt(req.params.index);
             if (isNaN(index) || index < 0 || index >= this.birthdays.length)
