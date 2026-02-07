@@ -4,14 +4,17 @@ Module.register("MMM-MyBirthdays", {
         showAge: true,
         maxItems: 5,
         jsonFile: "MyBirthdays.json",
-        filter: "all" // "all" of "upcomingMonth"
+        filter: "all"
     },
 
     start() {
-        Log.info("Starting module: " + this.name);
+        Log.info(`Starting module: ${this.name}`);
         this.birthdays = [];
         this.sendSocketNotification("MYBIRTHDAYS_CONFIG", this.config);
         this.updateDom();
+
+        // Vraag regelmatig nieuwe data op (fallback)
+        setInterval(() => this.sendSocketNotification("MYBIRTHDAYS_CONFIG", this.config), this.config.updateInterval);
     },
 
     getStyles() {
@@ -21,7 +24,7 @@ Module.register("MMM-MyBirthdays", {
     socketNotificationReceived(notification, payload) {
         if (notification === "MYBIRTHDAYS_DATA") {
             this.birthdays = payload;
-            this.updateDom();
+            this.updateDom(1000); // update DOM met fade-in effect
         }
     },
 
