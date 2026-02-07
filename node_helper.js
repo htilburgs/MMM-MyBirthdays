@@ -40,48 +40,39 @@ module.exports = NodeHelper.create({
         return path.join(__dirname, this.config.jsonFile || "MyBirthdays.json");
     },
 
-    // --- Lees verjaardagen en maak bestand aan als het ontbreekt ---
+    // --- Lees verjaardagen en maak bestand aan indien nodig ---
     loadBirthdays() {
         const jsonPath = this.getJsonPath();
 
-        fs.readFile(jsonPath, "utf8", (err, data) => {
-            if (err) {
-                if (err.code === "ENOENT") {
-                    console.log(`${this.name}: MyBirthdays.json bestaat niet, maak leeg bestand aan.`);
-                    this.birthdays = [];
-                    return this.saveBirthdays(true); // automatisch opslaan
-                } else {
-                    console.error(`${this.name}: Kan MyBirthdays.json niet lezen`, err);
-                    this.birthdays = [];
-                    this.sendSocketNotification("MYBIRTHDAYS_DATA", []);
-                    return;
-                }
-            }
-
-            try {
+        try {
+            if (!fs.existsSync(jsonPath)) {
+                console.log(`${this.name}: MyBirthdays.json bestaat niet, maak leeg bestand aan.`);
+                this.birthdays = [];
+                fs.writeFileSync(jsonPath, JSON.stringify(this.birthdays, null, 4));
+            } else {
+                const data = fs.readFileSync(jsonPath, "utf8");
                 this.birthdays = JSON.parse(data);
                 if (!Array.isArray(this.birthdays)) throw new Error("JSON is geen array");
-            } catch (e) {
-                console.error(`${this.name}: Fout bij parsen van JSON, reset naar leeg array`, e);
-                this.birthdays = [];
-                return this.saveBirthdays(true); // corrigeer corrupt bestand
             }
+        } catch (e) {
+            console.error(`${this.name}: Fout bij lezen/parsen van JSON, reset naar leeg array`, e);
+            this.birthdays = [];
+            fs.writeFileSync(jsonPath, JSON.stringify(this.birthdays, null, 4));
+        }
 
-            this.sortBirthdays();
-            this.sendSocketNotification("MYBIRTHDAYS_DATA", this.birthdays);
-        });
+        this.sortBirthdays();
+        this.sendSocketNotification("MYBIRTHDAYS_DATA", this.birthdays);
     },
 
-    // --- Sla verjaardagen op ---
-    saveBirthdays(skipNotification = false) {
+    // --- Sla verjaardagen op (synchronous) ---
+    saveBirthdays() {
         const jsonPath = this.getJsonPath();
-        fs.writeFile(jsonPath, JSON.stringify(this.birthdays, null, 4), (err) => {
-            if (err) {
-                console.error(`${this.name}: Kan MyBirthdays.json niet opslaan`, err);
-            } else {
-                if (!skipNotification) this.sendSocketNotification("MYBIRTHDAYS_DATA", this.birthdays);
-            }
-        });
+        try {
+            fs.writeFileSync(jsonPath, JSON.stringify(this.birthdays, null, 4));
+            this.sendSocketNotification("MYBIRTHDAYS_DATA", this.birthdays);
+        } catch (err) {
+            console.error(`${this.name}: Kan MyBirthdays.json niet opslaan`, err);
+        }
     },
 
     // --- Sorteer verjaardagen op eerstvolgende ---
@@ -102,7 +93,7 @@ module.exports = NodeHelper.create({
 
     // --- API Routes voor webinterface ---
     setupRoutes() {
-        // Haal alle verjaardagen op
+        // Alle verjaardagen ophalen
         this.app.get("/birthdays", (req, res) => res.json(this.birthdays));
 
         // Voeg nieuwe verjaardag toe
@@ -120,10 +111,8 @@ module.exports = NodeHelper.create({
         this.app.put("/birthdays/:index", (req, res) => {
             const index = parseInt(req.params.index);
             const { name, date } = req.body;
-
-            if (isNaN(index) || index < 0 || index >= this.birthdays.length) {
+            if (isNaN(index) || index < 0 || index >= this.birthdays.length)
                 return res.status(400).json({ error: "Ongeldige index" });
-            }
 
             if (name) this.birthdays[index].name = name;
             if (date) this.birthdays[index].date = date;
@@ -136,9 +125,8 @@ module.exports = NodeHelper.create({
         // Verwijder verjaardag
         this.app.delete("/birthdays/:index", (req, res) => {
             const index = parseInt(req.params.index);
-            if (isNaN(index) || index < 0 || index >= this.birthdays.length) {
+            if (isNaN(index) || index < 0 || index >= this.birthdays.length)
                 return res.status(400).json({ error: "Ongeldige index" });
-            }
 
             this.birthdays.splice(index, 1);
             this.saveBirthdays();
