@@ -1,0 +1,19 @@
+body { font-family: Arial; margin: 20px; }
+h1 { color: #333; }
+table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+th { background-color: #f2f2f2; }
+input[type="text"], input[type="date"] { width: 90%; padding: 5px; }
+button { padding: 5px 10px; margin-right: 5px; }
+
+.birthdays-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.birthday-item {
+    padding: 5px 0;
+    font-size: 1.2em;
+    color: #fff;
+}
