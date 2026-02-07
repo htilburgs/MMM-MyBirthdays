@@ -3,31 +3,45 @@ Module.register("MMM-MyBirthdays", {
         updateInterval: 60 * 60 * 1000, // 1 uur
         showAge: true,
         maxItems: 5,
-        jsonFile: "MyBirthdays.json"
+        jsonFile: "MyBirthdays.json",
+        filter: "all" // "all" of "upcomingMonth"
     },
 
-    start: function () {
+    start() {
         Log.info("Starting module: " + this.name);
         this.birthdays = [];
-        this.sendSocketNotification("CONFIG", this.config);
+        this.sendSocketNotification("MYBIRTHDAYS_CONFIG", this.config);
         this.updateDom();
     },
 
-    getStyles: function () {
+    getStyles() {
         return ["MMM-MyBirthdays.css"];
     },
 
-    socketNotificationReceived: function (notification, payload) {
-        if (notification === "BIRTHDAYS") {
+    socketNotificationReceived(notification, payload) {
+        if (notification === "MYBIRTHDAYS_DATA") {
             this.birthdays = payload;
             this.updateDom();
         }
     },
 
-    getDom: function () {
+    filterBirthdays(list) {
+        if (this.config.filter === "upcomingMonth") {
+            const today = new Date();
+            return list.filter(b => {
+                const date = new Date(b.date);
+                const next = new Date(today.getFullYear(), date.getMonth(), date.getDate());
+                if (next < today) next.setFullYear(today.getFullYear() + 1);
+                return next.getMonth() === today.getMonth();
+            });
+        }
+        return list;
+    },
+
+    getDom() {
         const wrapper = document.createElement("div");
         if (!this.birthdays || this.birthdays.length === 0) {
-            wrapper.innerHTML = "Geen geboortedagen gevonden";
+            wrapper.innerHTML = "Geen verjaardagen gevonden";
             return wrapper;
         }
 
@@ -35,8 +49,9 @@ Module.register("MMM-MyBirthdays", {
         list.className = "birthdays-list";
 
         const today = new Date();
+        const birthdaysToShow = this.filterBirthdays(this.birthdays).slice(0, this.config.maxItems);
 
-        this.birthdays.slice(0, this.config.maxItems).forEach(person => {
+        birthdaysToShow.forEach(person => {
             const li = document.createElement("li");
             li.className = "birthday-item";
 
