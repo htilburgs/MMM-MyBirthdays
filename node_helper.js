@@ -40,26 +40,39 @@ module.exports = NodeHelper.create({
         return path.join(__dirname, this.config.jsonFile || "MyBirthdays.json");
     },
 
+    // --- Lade verjaardagen en maak JSON automatisch aan indien nodig ---
     loadBirthdays() {
         const jsonPath = this.getJsonPath();
 
         fs.readFile(jsonPath, "utf8", (err, data) => {
             if (err) {
-                console.error(this.name + ": Kan MyBirthdays.json niet lezen", err);
-                this.birthdays = [];
-                this.sendSocketNotification("MYBIRTHDAYS_DATA", []);
-                return;
+                if (err.code === "ENOENT") {
+                    // Bestand bestaat niet, maak een leeg JSON bestand aan
+                    console.log(`${this.name}: MyBirthdays.json bestaat niet, maak leeg bestand aan.`);
+                    this.birthdays = [];
+                    fs.writeFile(jsonPath, JSON.stringify(this.birthdays, null, 4), (err2) => {
+                        if (err2) console.error(`${this.name}: Kan MyBirthdays.json niet aanmaken`, err2);
+                        this.sendSocketNotification("MYBIRTHDAYS_DATA", this.birthdays);
+                    });
+                    return;
+                } else {
+                    console.error(`${this.name}: Kan MyBirthdays.json niet lezen`, err);
+                    this.birthdays = [];
+                    this.sendSocketNotification("MYBIRTHDAYS_DATA", []);
+                    return;
+                }
             }
 
             try {
                 this.birthdays = JSON.parse(data);
             } catch (e) {
-                console.error(this.name + ": Fout bij parsen van JSON", e);
+                console.error(`${this.name}: Fout bij parsen van JSON`, e);
                 this.birthdays = [];
                 this.sendSocketNotification("MYBIRTHDAYS_DATA", []);
                 return;
             }
 
+            // Sorteer op eerstvolgende verjaardag
             const today = new Date();
             this.birthdays.sort((a, b) => {
                 const dateA = new Date(a.date);
@@ -80,11 +93,12 @@ module.exports = NodeHelper.create({
     saveBirthdays() {
         const jsonPath = this.getJsonPath();
         fs.writeFile(jsonPath, JSON.stringify(this.birthdays, null, 4), err => {
-            if (err) console.error(this.name + ": Kan MyBirthdays.json niet opslaan", err);
+            if (err) console.error(`${this.name}: Kan MyBirthdays.json niet opslaan`, err);
             else this.sendSocketNotification("MYBIRTHDAYS_DATA", this.birthdays);
         });
     },
 
+    // --- API Routes voor webinterface ---
     setupRoutes() {
         // Alle verjaardagen ophalen
         this.app.get("/birthdays", (req, res) => res.json(this.birthdays));
