@@ -31,18 +31,19 @@ module.exports = NodeHelper.create({
     setExpressApp: function (app) {
         const self = this;
 
-        // JSON parser middleware
+        // JSON parser voor POST
         app.use(express.json());
 
-        // Serve /public map
-        app.use("/", express.static(path.join(this.path, "public")));
+        // Statics: serveer /public
+        const publicPath = path.join(__dirname, "public");
+        app.use(express.static(publicPath));
 
-        // GET birthdays
+        // GET /api/birthdays → frontend haalt op
         app.get("/api/birthdays", (req, res) => {
             res.json(self.data);
         });
 
-        // POST birthdays
+        // POST /api/birthdays → frontend slaat op
         app.post("/api/birthdays", (req, res) => {
             if (!Array.isArray(req.body)) {
                 return res.status(400).json({ error: "Ongeldige data" });
@@ -59,6 +60,11 @@ module.exports = NodeHelper.create({
 
             self.sendSocketNotification("BIRTHDAYS_LOADED", self.data);
             res.json({ status: "ok" });
+        });
+
+        // Optioneel: routeer root naar index.html
+        app.get("/", (req, res) => {
+            res.sendFile(path.join(publicPath, "index.html"));
         });
     }
 });
