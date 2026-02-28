@@ -1,7 +1,6 @@
 let birthdays = [];
-let editingIndex = null; // index van de regel die wordt bewerkt
+let editingIndex = null;
 
-// Laad verjaardagen vanaf backend
 async function load() {
     try {
         const res = await fetch("/api/birthdays");
@@ -13,52 +12,37 @@ async function load() {
     }
 }
 
-// Tabel renderen
 function render() {
     const tbody = document.getElementById("list");
     tbody.innerHTML = "";
-
     const today = new Date();
 
-    // Sorteer verjaardagen op geboortedatum
-    birthdays.sort((a, b) => new Date(a.birthdate) - new Date(b.birthdate));
+    birthdays.sort((a,b)=>new Date(a.birthdate)-new Date(b.birthdate));
 
-    // Helpers
-    function formatDateDDMMYYYY(dateStr) {
-        const date = new Date(dateStr);
-        if (isNaN(date)) return dateStr;
-        const day = String(date.getDate()).padStart(2, "0");
-        const month = String(date.getMonth() + 1).padStart(2, "0");
-        const year = date.getFullYear();
-        return `${day}-${month}-${year}`;
+    function formatDateDDMMYYYY(dateStr){
+        const d = new Date(dateStr);
+        if(isNaN(d)) return dateStr;
+        return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
     }
 
-    function calculateAge(birthDate) {
-        let age = today.getFullYear() - birthDate.getFullYear();
-        const hasHadBirthday =
-            today.getMonth() > birthDate.getMonth() ||
-            (today.getMonth() === birthDate.getMonth() && today.getDate() >= birthDate.getDate());
-        if (!hasHadBirthday) age--;
-        return age;
+    function ageAndDays(birthDate){
+        let age = today.getFullYear()-birthDate.getFullYear();
+        const hadBirthday = today.getMonth()>birthDate.getMonth() || 
+                            (today.getMonth()===birthDate.getMonth() && today.getDate()>=birthDate.getDate());
+        if(!hadBirthday) age--;
+        let nextBD = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+        if(nextBD<today) nextBD.setFullYear(today.getFullYear()+1);
+        const daysLeft = Math.ceil((nextBD-today)/(1000*60*60*24));
+        return {age, daysLeft};
     }
 
-    function calculateDaysLeft(birthDate) {
-        let nextBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
-        if (nextBirthday < today) nextBirthday.setFullYear(today.getFullYear() + 1);
-        return Math.ceil((nextBirthday - today) / (1000 * 60 * 60 * 24));
-    }
-
-    birthdays.forEach((b, index) => {
-        const birthDate = new Date(b.birthdate);
-        if (isNaN(birthDate)) return;
-
-        const age = calculateAge(birthDate);
-        const daysLeft = calculateDaysLeft(birthDate);
-
-        const row = document.createElement("tr");
-
-        if (editingIndex === index) {
-            row.innerHTML = `
+    birthdays.forEach((b,index)=>{
+        const bd = new Date(b.birthdate);
+        if(isNaN(bd)) return;
+        const {age, daysLeft}=ageAndDays(bd);
+        const row=document.createElement("tr");
+        if(editingIndex===index){
+            row.innerHTML=`
                 <td><input id="edit-name" value="${b.name}"></td>
                 <td><input id="edit-birthdate" type="date" value="${b.birthdate}"></td>
                 <td>${age}</td>
@@ -67,7 +51,7 @@ function render() {
                 <td><button onclick="cancelEdit()">Annuleer</button></td>
             `;
         } else {
-            row.innerHTML = `
+            row.innerHTML=`
                 <td>${b.name}</td>
                 <td>${formatDateDDMMYYYY(b.birthdate)}</td>
                 <td>${age}</td>
@@ -76,68 +60,53 @@ function render() {
                 <td><button onclick="removeBirthday(${index})">Verwijder</button></td>
             `;
         }
-
         tbody.appendChild(row);
     });
 }
 
-// Data opslaan naar backend
-async function save() {
-    await fetch("/api/birthdays", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(birthdays)
+async function save(){
+    await fetch("/api/birthdays",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(birthdays)
     });
 }
 
-// Voeg nieuwe verjaardag toe
-function addBirthday() {
-    const nameInput = document.getElementById("name");
-    const birthdateInput = document.getElementById("birthdate");
-    const name = nameInput.value.trim();
-    const birthdate = birthdateInput.value;
-
-    if (!name || !birthdate) return;
-
-    birthdays.push({ name, birthdate });
+function addBirthday(){
+    const name=document.getElementById("name").value.trim();
+    const birthdate=document.getElementById("birthdate").value;
+    if(!name||!birthdate) return;
+    birthdays.push({name,birthdate});
     save();
     render();
-
-    // Velden leegmaken
-    nameInput.value = "";
-    birthdateInput.value = "";
+    document.getElementById("name").value="";
+    document.getElementById("birthdate").value="";
 }
 
-// Verwijder verjaardag
-function removeBirthday(index) {
-    birthdays.splice(index, 1);
+function removeBirthday(index){
+    birthdays.splice(index,1);
     save();
     render();
 }
 
-// Start bewerken
-function editBirthday(index) {
-    editingIndex = index;
+function editBirthday(index){
+    editingIndex=index;
     render();
 }
 
-// Annuleer bewerken
-function cancelEdit() {
-    editingIndex = null;
+function cancelEdit(){
+    editingIndex=null;
     render();
 }
 
-// Opslaan na bewerken
-function saveEdit(index) {
-    const name = document.getElementById("edit-name").value.trim();
-    const birthdate = document.getElementById("edit-birthdate").value;
-    if (!name || !birthdate) return;
-
-    birthdays[index] = { name, birthdate };
-    editingIndex = null;
+function saveEdit(index){
+    const name=document.getElementById("edit-name").value.trim();
+    const birthdate=document.getElementById("edit-birthdate").value;
+    if(!name||!birthdate) return;
+    birthdays[index]={name,birthdate};
+    editingIndex=null;
     save();
     render();
 }
 
-// Initialiseer
 load();
