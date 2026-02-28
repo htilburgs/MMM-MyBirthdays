@@ -9,7 +9,6 @@ async function load() {
 function render() {
     const tbody = document.getElementById("list");
     tbody.innerHTML = "";
-
     birthdays.forEach((b, index) => {
         const row = document.createElement("tr");
         row.innerHTML = `
@@ -32,9 +31,7 @@ async function save() {
 function addBirthday() {
     const name = document.getElementById("name").value;
     const birthdate = document.getElementById("birthdate").value;
-
     if (!name || !birthdate) return;
-
     birthdays.push({ name, birthdate });
     save();
     render();
