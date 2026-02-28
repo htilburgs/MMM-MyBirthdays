@@ -13,10 +13,24 @@ module.exports = NodeHelper.create({
     loadData: function () {
         if (fs.existsSync(this.filePath)) {
             try {
-                this.data = JSON.parse(fs.readFileSync(this.filePath));
-                this.data.sort((a, b) => new Date(a.birthdate) - new Date(b.birthdate));
+                const raw = fs.readFileSync(this.filePath);
+                const parsed = JSON.parse(raw);
+
+                if (Array.isArray(parsed)) {
+                    // Sorteer alleen geldige items
+                    this.data = parsed.filter(b => b.birthdate).sort((a, b) => {
+                        const da = new Date(a.birthdate);
+                        const db = new Date(b.birthdate);
+                        if (isNaN(da)) return 1;
+                        if (isNaN(db)) return -1;
+                        return da - db;
+                    });
+                } else {
+                    this.data = [];
+                }
+
             } catch (e) {
-                console.error("Fout bij het laden van MyBirthdays.json", e);
+                console.error("Fout bij laden MyBirthdays.json", e);
                 this.data = [];
             }
         }
@@ -31,30 +45,33 @@ module.exports = NodeHelper.create({
     setExpressApp: function (app) {
         const self = this;
 
-        // JSON parser
         app.use(express.json());
 
-        // Serveer de frontend op root
+        // Root route serveert frontend
         const publicPath = path.join(__dirname, "public");
         app.get("/", (req, res) => {
             res.sendFile(path.join(publicPath, "index.html"));
         });
 
-        // Serveer alle statische bestanden uit public (script.js, style.css)
+        // Statische bestanden
         app.use("/static", express.static(publicPath));
 
-        // API endpoints voor frontend
+        // API endpoints
         app.get("/api/birthdays", (req, res) => {
             res.json(self.data);
         });
 
         app.post("/api/birthdays", (req, res) => {
-            if (!Array.isArray(req.body)) {
-                return res.status(400).json({ error: "Ongeldige data" });
-            }
+            if (!Array.isArray(req.body)) return res.status(400).json({ error: "Ongeldige data" });
 
-            self.data = req.body;
-            self.data.sort((a, b) => new Date(a.birthdate) - new Date(b.birthdate));
+            self.data = req.body.filter(b => b.birthdate); // alleen geldige items
+            self.data.sort((a, b) => {
+                const da = new Date(a.birthdate);
+                const db = new Date(b.birthdate);
+                if (isNaN(da)) return 1;
+                if (isNaN(db)) return -1;
+                return da - db;
+            });
 
             try {
                 fs.writeFileSync(self.filePath, JSON.stringify(self.data, null, 2));
