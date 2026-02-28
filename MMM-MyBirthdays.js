@@ -1,55 +1,76 @@
-getDom: function () {
-    const wrapper = document.createElement("table");
-    wrapper.className = "birthdays-table";
+Module.register("MMM-MyBirthdays", {
+    defaults: {},
 
-    const header = document.createElement("tr");
-    header.innerHTML = `
-        <th>Naam</th>
-        <th>Leeftijd</th>
-        <th>Geboortedatum</th>
-        <th>Dagen</th>
-    `;
-    wrapper.appendChild(header);
+    start: function () {
+        this.birthdays = [];
+        // Initial load
+        this.sendSocketNotification("LOAD_BIRTHDAYS");
+    },
 
-    const today = new Date();
+    socketNotificationReceived: function (notification, payload) {
+        console.log("Socket notification received:", notification, payload);
+        if (notification === "BIRTHDAYS_LOADED") {
+            this.birthdays = payload || [];
+            this.updateDom();
+        }
+    },
 
-    // Helper: formatteer datum als dd-mmmm
-    function formatDate(dateStr) {
-        const date = new Date(dateStr);
-        const options = { day: "2-digit", month: "long" };
-        return date.toLocaleDateString("nl-NL", options); // Nederlandse maand
-    }
+    getStyles: function () {
+        return ["MyBirthdays.css"];
+    },
 
-    this.birthdays.forEach(person => {
-        const birthDate = new Date(person.birthdate);
+    getDom: function () {
+        const wrapper = document.createElement("table");
+        wrapper.className = "birthdays-table";
 
-        // leeftijd berekenen
-        let age = today.getFullYear() - birthDate.getFullYear();
-        const hasHadBirthday =
-            (today.getMonth() > birthDate.getMonth()) ||
-            (today.getMonth() === birthDate.getMonth() &&
-             today.getDate() >= birthDate.getDate());
+        const header = document.createElement("tr");
+        header.innerHTML = `
+            <th>Naam</th>
+            <th>Leeftijd</th>
+            <th>Geboortedatum</th>
+            <th>Dagen</th>
+        `;
+        wrapper.appendChild(header);
 
-        if (!hasHadBirthday) age--;
+        const today = new Date();
 
-        // dagen tot verjaardag
-        let nextBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
-        if (nextBirthday < today) {
-            nextBirthday.setFullYear(today.getFullYear() + 1);
+        // helper functie dd-mmmm
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            if (isNaN(date)) return dateStr;
+            return date.toLocaleDateString("nl-NL", { day: "2-digit", month: "long" });
         }
 
-        const diffTime = nextBirthday - today;
-        const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        this.birthdays.forEach(person => {
+            const birthDate = new Date(person.birthdate);
 
-        const row = document.createElement("tr");
-        row.innerHTML = `
-            <td>${person.name}</td>
-            <td>${age}</td>
-            <td>${formatDate(person.birthdate)}</td>
-            <td>${daysLeft}</td>
-        `;
-        wrapper.appendChild(row);
-    });
+            if (isNaN(birthDate)) return; // skip invalid dates
 
-    return wrapper;
-}
+            // Leeftijd berekenen
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const hasHadBirthday =
+                (today.getMonth() > birthDate.getMonth()) ||
+                (today.getMonth() === birthDate.getMonth() &&
+                 today.getDate() >= birthDate.getDate());
+            if (!hasHadBirthday) age--;
+
+            // Dagen tot verjaardag
+            let nextBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+            if (nextBirthday < today) nextBirthday.setFullYear(today.getFullYear() + 1);
+
+            const diffTime = nextBirthday - today;
+            const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${person.name}</td>
+                <td>${age}</td>
+                <td>${formatDate(person.birthdate)}</td>
+                <td>${daysLeft}</td>
+            `;
+            wrapper.appendChild(row);
+        });
+
+        return wrapper;
+    }
+});
