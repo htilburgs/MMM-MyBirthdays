@@ -1,18 +1,21 @@
 let birthdays = [];
-let editingIndex = null;
+let editingIndex = null; // huidige regel die wordt bewerkt
 
+// Laad de data vanaf backend
 async function load() {
     const res = await fetch("/api/birthdays");
     birthdays = await res.json();
     render();
 }
 
+// Render de tabel
 function render() {
     const tbody = document.getElementById("list");
     tbody.innerHTML = "";
 
     const today = new Date();
 
+    // helper: datum DD-MM-JJJJ
     function formatDateDDMMYYYY(dateStr) {
         const date = new Date(dateStr);
         if (isNaN(date)) return dateStr;
@@ -22,6 +25,7 @@ function render() {
         return `${day}-${month}-${year}`;
     }
 
+    // helper: bereken leeftijd
     function calculateAge(birthDate) {
         let age = today.getFullYear() - birthDate.getFullYear();
         const hasHadBirthday =
@@ -31,11 +35,11 @@ function render() {
         return age;
     }
 
+    // helper: bereken dagen tot volgende verjaardag
     function calculateDaysLeft(birthDate) {
         let nextBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
         if (nextBirthday < today) nextBirthday.setFullYear(today.getFullYear() + 1);
-        const diffTime = nextBirthday - today;
-        return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return Math.ceil((nextBirthday - today) / (1000 * 60 * 60 * 24));
     }
 
     birthdays.forEach((b, index) => {
@@ -48,6 +52,7 @@ function render() {
         const row = document.createElement("tr");
 
         if (editingIndex === index) {
+            // Edit-mode: invoervelden + Opslaan/Annuleer
             row.innerHTML = `
                 <td><input id="edit-name" value="${b.name}"></td>
                 <td><input id="edit-birthdate" type="date" value="${b.birthdate}"></td>
@@ -57,13 +62,14 @@ function render() {
                 <td><button onclick="cancelEdit()">Annuleer</button></td>
             `;
         } else {
+            // Normale weergave + Bewerk/Verwijder
             row.innerHTML = `
                 <td>${b.name}</td>
                 <td>${formatDateDDMMYYYY(b.birthdate)}</td>
                 <td>${age}</td>
                 <td>${daysLeft}</td>
-                <td><button onclick="removeBirthday(${index})">Verwijder</button></td>
                 <td><button onclick="editBirthday(${index})">Bewerk</button></td>
+                <td><button onclick="removeBirthday(${index})">Verwijder</button></td>
             `;
         }
 
@@ -71,6 +77,7 @@ function render() {
     });
 }
 
+// Save data naar backend
 async function save() {
     await fetch("/api/birthdays", {
         method: "POST",
@@ -79,6 +86,7 @@ async function save() {
     });
 }
 
+// Voeg een nieuwe verjaardag toe
 function addBirthday() {
     const nameInput = document.getElementById("name");
     const birthdateInput = document.getElementById("birthdate");
@@ -96,22 +104,26 @@ function addBirthday() {
     birthdateInput.value = "";
 }
 
+// Verwijder verjaardag
 function removeBirthday(index) {
     birthdays.splice(index, 1);
     save();
     render();
 }
 
+// Start bewerken
 function editBirthday(index) {
     editingIndex = index;
     render();
 }
 
+// Annuleer bewerken
 function cancelEdit() {
     editingIndex = null;
     render();
 }
 
+// Opslaan na bewerken
 function saveEdit(index) {
     const name = document.getElementById("edit-name").value.trim();
     const birthdate = document.getElementById("edit-birthdate").value;
@@ -123,4 +135,5 @@ function saveEdit(index) {
     render();
 }
 
+// Init
 load();
