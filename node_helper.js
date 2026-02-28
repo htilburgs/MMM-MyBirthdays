@@ -1,65 +1,66 @@
 const NodeHelper = require("node_helper");
 const fs = require("fs");
 const path = require("path");
-const express = require("express");
 
 module.exports = NodeHelper.create({
     start: function () {
-        console.log("MMM-MyBirthdays helper gestart");
-        this.filePath = path.join(__dirname, "MyBirthdays.json");
         this.data = [];
+        this.filePath = path.join(this.path, "MyBirthdays.json");
+
+        // Laad bestaande data
         this.loadData();
-        this.startWebServer();
     },
 
     loadData: function () {
-        try {
-            if (fs.existsSync(this.filePath)) {
+        if (fs.existsSync(this.filePath)) {
+            try {
                 this.data = JSON.parse(fs.readFileSync(this.filePath));
-            } else {
+                // Sorteer op geboortedatum
+                this.data.sort((a, b) => new Date(a.birthdate) - new Date(b.birthdate));
+            } catch (e) {
+                console.error("Fout bij het laden van MyBirthdays.json", e);
                 this.data = [];
-                fs.writeFileSync(this.filePath, JSON.stringify(this.data, null, 2));
             }
-        } catch (e) {
-            console.error("Fout bij laden JSON:", e);
-            this.data = [];
         }
     },
 
-    startWebServer: function () {
-        const app = express();
-        app.use(express.json());
-
-        // Serveer statische bestanden uit /public
-        app.use(express.static(path.join(__dirname, "public")));
-
-        // Homepage
-        app.get("/", (req, res) => {
-            res.sendFile(path.join(__dirname, "public", "index.html"));
-        });
-
-        // Data ophalen
-        app.get("/api/birthdays", (req, res) => {
-            res.json(this.data);
-        });
-
-        // Data opslaan
-        app.post("/api/birthdays", (req, res) => {
-            this.data = req.body;
-            fs.writeFileSync(this.filePath, JSON.stringify(this.data, null, 2));
-            // Realtime update MagicMirror
-            this.sendSocketNotification("BIRTHDAYS_LOADED", this.data);
-            res.json({ status: "ok" });
-        });
-
-        app.listen(3123, () => {
-            console.log("MMM-MyBirthdays webserver op poort 3123");
-        });
-    },
-
-    socketNotificationReceived: function (notification) {
+    socketNotificationReceived: function (notification, payload) {
         if (notification === "LOAD_BIRTHDAYS") {
             this.sendSocketNotification("BIRTHDAYS_LOADED", this.data);
         }
+    },
+
+    // Express server voor frontend
+    setExpressApp: function (app) {
+        const self = this;
+
+        // GET /api/birthdays → frontend haalt op
+        app.get("/api/birthdays", (req, res) => {
+            res.json(self.data);
+        });
+
+        // POST /api/birthdays → frontend slaat op
+        app.post("/api/birthdays", (req, res) => {
+            if (!Array.isArray(req.body)) {
+                return res.status(400).json({ error: "Ongeldige data" });
+            }
+
+            self.data = req.body;
+
+            // Sorteer data op geboortedatum
+            self.data.sort((a, b) => new Date(a.birthdate) - new Date(b.birthdate));
+
+            // Opslaan naar JSON
+            try {
+                fs.writeFileSync(self.filePath, JSON.stringify(self.data, null, 2));
+            } catch (e) {
+                console.error("Fout bij opslaan MyBirthdays.json", e);
+            }
+
+            // Notificatie naar MagicMirror-module
+            self.sendSocketNotification("BIRTHDAYS_LOADED", self.data);
+
+            res.json({ status: "ok" });
+        });
     }
 });
