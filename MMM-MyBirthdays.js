@@ -8,7 +8,6 @@ Module.register("MMM-MyBirthdays", {
     },
 
     socketNotificationReceived: function (notification, payload) {
-        console.log("Socket notification received:", notification, payload);
         if (notification === "BIRTHDAYS_LOADED") {
             this.birthdays = payload || [];
             this.updateDom();
@@ -34,17 +33,19 @@ Module.register("MMM-MyBirthdays", {
 
         const today = new Date();
 
+        // Sorteer de verjaardagen op geboortedatum
+        const sortedBirthdays = this.birthdays.slice().sort((a, b) => new Date(a.birthdate) - new Date(b.birthdate));
+
         // Helper functie dd-mmmm
-        function formatDate(dateStr) {
+        function formatDateDDMMMM(dateStr) {
             const date = new Date(dateStr);
             if (isNaN(date)) return dateStr;
             return date.toLocaleDateString("nl-NL", { day: "2-digit", month: "long" });
         }
 
-        this.birthdays.forEach(person => {
+        sortedBirthdays.forEach(person => {
             const birthDate = new Date(person.birthdate);
-
-            if (isNaN(birthDate)) return; // skip invalid dates
+            if (isNaN(birthDate)) return;
 
             // Leeftijd berekenen
             let age = today.getFullYear() - birthDate.getFullYear();
@@ -54,10 +55,9 @@ Module.register("MMM-MyBirthdays", {
                  today.getDate() >= birthDate.getDate());
             if (!hasHadBirthday) age--;
 
-            // Dagen tot verjaardag
+            // Dagen tot volgende verjaardag
             let nextBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
             if (nextBirthday < today) nextBirthday.setFullYear(today.getFullYear() + 1);
-
             const diffTime = nextBirthday - today;
             const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
@@ -65,7 +65,7 @@ Module.register("MMM-MyBirthdays", {
             row.innerHTML = `
                 <td>${person.name}</td>
                 <td>${age}</td>
-                <td>${formatDate(person.birthdate)}</td>
+                <td>${formatDateDDMMMM(person.birthdate)}</td>
                 <td>${daysLeft}</td>
             `;
             wrapper.appendChild(row);
