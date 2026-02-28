@@ -1,6 +1,7 @@
 let birthdays = [];
-let editingIndex = null;
+let editingIndex = null; // index van de regel die wordt bewerkt
 
+// Laad verjaardagen vanaf backend
 async function load() {
     try {
         const res = await fetch("/api/birthdays");
@@ -12,15 +13,17 @@ async function load() {
     }
 }
 
+// Tabel renderen
 function render() {
     const tbody = document.getElementById("list");
     tbody.innerHTML = "";
 
     const today = new Date();
 
-    // Sorteer op geboortedatum
+    // Sorteer verjaardagen op geboortedatum
     birthdays.sort((a, b) => new Date(a.birthdate) - new Date(b.birthdate));
 
+    // Helpers
     function formatDateDDMMYYYY(dateStr) {
         const date = new Date(dateStr);
         if (isNaN(date)) return dateStr;
@@ -78,6 +81,7 @@ function render() {
     });
 }
 
+// Data opslaan naar backend
 async function save() {
     await fetch("/api/birthdays", {
         method: "POST",
@@ -86,6 +90,7 @@ async function save() {
     });
 }
 
+// Voeg nieuwe verjaardag toe
 function addBirthday() {
     const nameInput = document.getElementById("name");
     const birthdateInput = document.getElementById("birthdate");
@@ -98,26 +103,31 @@ function addBirthday() {
     save();
     render();
 
+    // Velden leegmaken
     nameInput.value = "";
     birthdateInput.value = "";
 }
 
+// Verwijder verjaardag
 function removeBirthday(index) {
     birthdays.splice(index, 1);
     save();
     render();
 }
 
+// Start bewerken
 function editBirthday(index) {
     editingIndex = index;
     render();
 }
 
+// Annuleer bewerken
 function cancelEdit() {
     editingIndex = null;
     render();
 }
 
+// Opslaan na bewerken
 function saveEdit(index) {
     const name = document.getElementById("edit-name").value.trim();
     const birthdate = document.getElementById("edit-birthdate").value;
@@ -129,4 +139,5 @@ function saveEdit(index) {
     render();
 }
 
+// Initialiseer
 load();
