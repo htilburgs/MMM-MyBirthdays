@@ -34,7 +34,7 @@ Module.register("MMM-MyBirthdays", {
 
         const today = new Date();
 
-        // helper functie dd-mmmm
+        // Helper functie dd-mmmm
         function formatDate(dateStr) {
             const date = new Date(dateStr);
             if (isNaN(date)) return dateStr;
