@@ -14,7 +14,7 @@ Module.register("MMM-MyBirthdays", {
     },
 
     getStyles: function () {
-        return ["birthdays.css"];
+        return ["MyBirthdays.css"];
     },
 
     getDom: function () {
