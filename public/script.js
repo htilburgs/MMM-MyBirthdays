@@ -1,24 +1,26 @@
 let birthdays = [];
-let editingIndex = null; // huidige regel die wordt bewerkt
+let editingIndex = null;
 
-// Laad data vanaf backend
 async function load() {
-    const res = await fetch("/api/birthdays");
-    birthdays = await res.json();
-    render();
+    try {
+        const res = await fetch("/api/birthdays");
+        if (!res.ok) throw new Error("Kan data niet ophalen");
+        birthdays = await res.json();
+        render();
+    } catch (err) {
+        console.error("Fout bij laden verjaardagen:", err);
+    }
 }
 
-// Render de tabel
 function render() {
     const tbody = document.getElementById("list");
     tbody.innerHTML = "";
 
     const today = new Date();
 
-    // Sorteer verjaardagen op geboortedatum
+    // Sorteer op geboortedatum
     birthdays.sort((a, b) => new Date(a.birthdate) - new Date(b.birthdate));
 
-    // helpers
     function formatDateDDMMYYYY(dateStr) {
         const date = new Date(dateStr);
         if (isNaN(date)) return dateStr;
@@ -76,7 +78,6 @@ function render() {
     });
 }
 
-// Save data naar backend
 async function save() {
     await fetch("/api/birthdays", {
         method: "POST",
@@ -85,7 +86,6 @@ async function save() {
     });
 }
 
-// Voeg een nieuwe verjaardag toe
 function addBirthday() {
     const nameInput = document.getElementById("name");
     const birthdateInput = document.getElementById("birthdate");
@@ -98,31 +98,26 @@ function addBirthday() {
     save();
     render();
 
-    // Velden leegmaken
     nameInput.value = "";
     birthdateInput.value = "";
 }
 
-// Verwijder verjaardag
 function removeBirthday(index) {
     birthdays.splice(index, 1);
     save();
     render();
 }
 
-// Start bewerken
 function editBirthday(index) {
     editingIndex = index;
     render();
 }
 
-// Annuleer bewerken
 function cancelEdit() {
     editingIndex = null;
     render();
 }
 
-// Opslaan na bewerken
 function saveEdit(index) {
     const name = document.getElementById("edit-name").value.trim();
     const birthdate = document.getElementById("edit-birthdate").value;
@@ -134,5 +129,4 @@ function saveEdit(index) {
     render();
 }
 
-// Init
 load();
