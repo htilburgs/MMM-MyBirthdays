@@ -11,11 +11,21 @@ function render() {
     const tbody = document.getElementById("list");
     tbody.innerHTML = "";
 
+    // helper functie voor DD-MM-JJJJ
+    function formatDateDDMMYYYY(dateStr) {
+        const date = new Date(dateStr);
+        if (isNaN(date)) return dateStr;
+        const day = String(date.getDate()).padStart(2, "0");
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const year = date.getFullYear();
+        return `${day}-${month}-${year}`;
+    }
+
     birthdays.forEach((b, index) => {
         const row = document.createElement("tr");
 
         if (editingIndex === index) {
-            // Toon invoervelden voor bewerken
+            // invoervelden voor bewerken
             row.innerHTML = `
                 <td><input id="edit-name" value="${b.name}"></td>
                 <td><input id="edit-birthdate" type="date" value="${b.birthdate}"></td>
@@ -23,10 +33,9 @@ function render() {
                 <td><button onclick="cancelEdit()">Annuleer</button></td>
             `;
         } else {
-            // Normale weergave
             row.innerHTML = `
                 <td>${b.name}</td>
-                <td>${b.birthdate}</td>
+                <td>${formatDateDDMMYYYY(b.birthdate)}</td>
                 <td><button onclick="removeBirthday(${index})">Verwijder</button></td>
                 <td><button onclick="editBirthday(${index})">Bewerk</button></td>
             `;
@@ -45,12 +54,20 @@ async function save() {
 }
 
 function addBirthday() {
-    const name = document.getElementById("name").value;
-    const birthdate = document.getElementById("birthdate").value;
+    const nameInput = document.getElementById("name");
+    const birthdateInput = document.getElementById("birthdate");
+    const name = nameInput.value.trim();
+    const birthdate = birthdateInput.value;
+
     if (!name || !birthdate) return;
+
     birthdays.push({ name, birthdate });
     save();
     render();
+
+    // Na toevoegen de velden leeg maken
+    nameInput.value = "";
+    birthdateInput.value = "";
 }
 
 function removeBirthday(index) {
@@ -70,7 +87,7 @@ function cancelEdit() {
 }
 
 function saveEdit(index) {
-    const name = document.getElementById("edit-name").value;
+    const name = document.getElementById("edit-name").value.trim();
     const birthdate = document.getElementById("edit-birthdate").value;
     if (!name || !birthdate) return;
 
