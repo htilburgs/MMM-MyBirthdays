@@ -29,11 +29,13 @@ module.exports = NodeHelper.create({
     startWebServer: function () {
         const app = express();
         app.use(express.json());
-        app.use(express.static(__dirname));
 
-        // Webpagina
+        // Serveer statische bestanden uit /public
+        app.use(express.static(path.join(__dirname, "public")));
+
+        // Homepage
         app.get("/", (req, res) => {
-            res.sendFile(path.join(__dirname, "index.html"));
+            res.sendFile(path.join(__dirname, "public", "index.html"));
         });
 
         // Data ophalen
