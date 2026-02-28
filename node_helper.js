@@ -31,19 +31,23 @@ module.exports = NodeHelper.create({
     setExpressApp: function (app) {
         const self = this;
 
-        // JSON parser voor POST
+        // JSON parser
         app.use(express.json());
 
-        // Statics: serveer /public
+        // Serveer de frontend op root
         const publicPath = path.join(__dirname, "public");
-        app.use(express.static(publicPath));
+        app.get("/", (req, res) => {
+            res.sendFile(path.join(publicPath, "index.html"));
+        });
 
-        // GET /api/birthdays → frontend haalt op
+        // Serveer alle statische bestanden uit public (script.js, style.css)
+        app.use("/static", express.static(publicPath));
+
+        // API endpoints voor frontend
         app.get("/api/birthdays", (req, res) => {
             res.json(self.data);
         });
 
-        // POST /api/birthdays → frontend slaat op
         app.post("/api/birthdays", (req, res) => {
             if (!Array.isArray(req.body)) {
                 return res.status(400).json({ error: "Ongeldige data" });
@@ -60,11 +64,6 @@ module.exports = NodeHelper.create({
 
             self.sendSocketNotification("BIRTHDAYS_LOADED", self.data);
             res.json({ status: "ok" });
-        });
-
-        // Optioneel: routeer root naar index.html
-        app.get("/", (req, res) => {
-            res.sendFile(path.join(publicPath, "index.html"));
         });
     }
 });
