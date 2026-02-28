@@ -1,9 +1,16 @@
 Module.register("MMM-MyBirthdays", {
-    defaults: {},
+    defaults: {
+        reloadInterval: 60 * 1000 // elke 60 seconden herladen
+    },
 
     start: function () {
         this.birthdays = [];
         this.sendSocketNotification("LOAD_BIRTHDAYS");
+
+        // automatisch periodiek herladen
+        setInterval(() => {
+            this.sendSocketNotification("LOAD_BIRTHDAYS");
+        }, this.config.reloadInterval);
     },
 
     socketNotificationReceived: function (notification, payload) {
