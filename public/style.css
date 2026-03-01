@@ -5,13 +5,13 @@ body {
     color: white;
 }
 
-.add-form input {
+input {
     margin: 4px 4px 4px 0;
     padding: 4px;
     font-size: 14px;
 }
 
-.add-form button {
+button {
     margin: 2px;
     padding: 4px 8px;
     font-size: 14px;
@@ -35,6 +35,11 @@ th {
     font-weight: bold;
 }
 
+tr.upcoming {
+    color: #ffd700; /* gold for upcoming */
+    font-weight: bold;
+}
+
 td button {
     font-size: 12px;
     padding: 2px 6px;
@@ -42,34 +47,4 @@ td button {
 
 input[type="date"] {
     padding: 2px 4px;
-}
-
-.upcoming {
-    color: #ffd700;
-    font-weight: bold;
-}
-
-.today {
-    color: #00ff00;
-    font-weight: bold;
-}
-
-.not-matching {
-    opacity: 0.3;      /* lichte transparantie voor niet-overeenkomende rijen */
-    transition: opacity 0.2s;
-}
-
-.filter-container {
-    margin: 10px 0;
-}
-
-#filter-input {
-    padding: 4px;
-    width: 200px;
-    margin-right: 8px;
-}
-
-#reset-filter-btn {
-    padding: 4px 8px;
-    cursor: pointer;
 }
