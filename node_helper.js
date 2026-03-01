@@ -72,9 +72,7 @@ module.exports = NodeHelper.create({
             return next;
         };
 
-        return [...list].sort((a, b) => {
-            return getNextBirthday(a.date) - getNextBirthday(b.date);
-        });
+        return [...list].sort((a, b) => getNextBirthday(a.date) - getNextBirthday(b.date));
     },
 
     registerRoutes: function () {
@@ -123,19 +121,17 @@ module.exports = NodeHelper.create({
 
     socketNotificationReceived: function (notification, payload) {
         if (notification === "LOAD_BIRTHDAYS") {
-            // Multi-language auto detection
+            // Multi-language auto detection from frontend
             let lang = "en";
             if (payload && payload.language) {
                 lang = payload.language.split("-")[0];
-            } else if (this.config && this.config.language) {
-                lang = this.config.language.split("-")[0];
             }
-
             const translations = this.loadTranslations(lang);
 
             this.sendSocketNotification("BIRTHDAYS_LOADED", {
                 birthdays: this.getSortedBirthdays(this.birthdays),
-                translations: translations
+                translations: translations,
+                language: lang // send detected language back to frontend
             });
         }
     }
