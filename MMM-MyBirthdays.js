@@ -2,17 +2,17 @@ Module.register("MMM-MyBirthdays", {
     defaults: {
         maxItems: 5,
         showColumnHeaders: true,
-        language: null // null = gebruik MM-taal
+        language: null // null = use MagicMirror language
     },
 
     start: function() {
         this.birthdays = [];
         this.translations = { B_Name: "Name", B_Age: "Age", B_Date: "Birthdate", B_Days: "Days" };
 
-        // Gebruik module taal als ingesteld, anders MM taal, anders fallback naar Engels
+        // Resolve language: module override or MM language
         this.lang = this.config.language || (window.config?.language) || "en";
 
-        // Vraag helper om verjaardagen en vertalingen
+        // Load birthdays and translations from helper
         this.sendSocketNotification("LOAD_BIRTHDAYS", { language: this.lang });
     },
 
@@ -21,7 +21,7 @@ Module.register("MMM-MyBirthdays", {
             this.birthdays = payload.birthdays || [];
             this.translations = payload.translations || this.translations;
 
-            // Alleen update de taal als module taal null is (dus overnemen van helper/MM)
+            // Only update language if module language parameter is null
             if (!this.config.language) this.lang = payload.language || this.lang;
 
             this.updateDom();
@@ -45,13 +45,13 @@ Module.register("MMM-MyBirthdays", {
             return Math.round((nextBD - todayMid) / (1000 * 60 * 60 * 24));
         }
 
-        // Sorteer verjaardagen op aankomend
+        // Sort birthdays by upcoming
         const sorted = this.birthdays.slice().sort(
             (a, b) => getDaysLeft(new Date(a.birthdate)) - getDaysLeft(new Date(b.birthdate))
         );
         const displayed = sorted.slice(0, this.config.maxItems);
 
-        // Kolomkoppen
+        // Column headers
         if (this.config.showColumnHeaders) {
             const headerRow = document.createElement("tr");
             headerRow.innerHTML = `
@@ -63,7 +63,7 @@ Module.register("MMM-MyBirthdays", {
             wrapper.appendChild(headerRow);
         }
 
-        // Render verjaardagen
+        // Render birthdays
         displayed.forEach((person, index) => {
             const birthDate = new Date(person.birthdate);
             if (isNaN(birthDate)) return;
