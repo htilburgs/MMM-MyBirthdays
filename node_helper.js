@@ -28,13 +28,13 @@ module.exports = NodeHelper.create({
         }
     },
 
-    loadTranslations: function(lang) {
+    loadTranslations: function (lang) {
         const filePath = path.join(this.translationsDir, `${lang}.json`);
         if (fs.existsSync(filePath)) {
             try {
                 return JSON.parse(fs.readFileSync(filePath));
             } catch (e) {
-                console.error(`Error parsing translation file ${filePath}:`, e);
+                console.error(`Error parsing ${filePath}:`, e);
             }
         }
 
@@ -48,11 +48,12 @@ module.exports = NodeHelper.create({
             }
         }
 
-        return { B_Name:"Name", B_Age:"Age", B_Date:"Birthdate", B_Days:"Days" };
+        // ultimate fallback
+        return { B_Name: "Name", B_Age: "Age", B_Date: "Birthdate", B_Days: "Days" };
     },
 
-    registerRoutes: function() {
-        const app = this.expressApp; // MagicMirror injecteert deze
+    registerRoutes: function () {
+        const app = this.expressApp;
         if (!app) {
             console.error("Express app not found! Cannot register /mybirthdays route.");
             return;
@@ -79,14 +80,15 @@ module.exports = NodeHelper.create({
         console.log("MMM-MyBirthdays routes registered at /mybirthdays");
     },
 
-    socketNotificationReceived: function(notification, payload) {
+    socketNotificationReceived: function (notification, payload) {
         if (notification === "LOAD_BIRTHDAYS") {
             const lang = payload && payload.language ? payload.language : "en";
             const translations = this.loadTranslations(lang);
 
             this.sendSocketNotification("BIRTHDAYS_LOADED", {
                 birthdays: this.birthdays,
-                translations: translations
+                translations: translations,
+                language: lang
             });
         }
     }
