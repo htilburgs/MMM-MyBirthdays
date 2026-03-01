@@ -53,7 +53,7 @@ module.exports = NodeHelper.create({
         return { B_Name: "Name", B_Age: "Age", B_Date: "Birthdate", B_Days: "Days" };
     },
 
-    // ✅ NEW: sort by upcoming birthday
+    // Sort birthdays by next upcoming date
     getSortedBirthdays: function (list) {
         const today = new Date();
 
@@ -84,7 +84,7 @@ module.exports = NodeHelper.create({
             return;
         }
 
-        // ✅ FIX: enable JSON body parsing
+        // Enable JSON body parsing
         app.use(require("express").json());
 
         // Serve static files
@@ -100,7 +100,6 @@ module.exports = NodeHelper.create({
             res.json(this.getSortedBirthdays(this.birthdays));
         });
 
-        // ✅ FIX: validate POST body
         app.post("/api/birthdays", (req, res) => {
             if (!Array.isArray(req.body)) {
                 return res.status(400).json({ status: "error", message: "Invalid data" });
@@ -124,7 +123,14 @@ module.exports = NodeHelper.create({
 
     socketNotificationReceived: function (notification, payload) {
         if (notification === "LOAD_BIRTHDAYS") {
-            const lang = payload && payload.language ? payload.language : "en";
+            // Multi-language auto detection
+            let lang = "en";
+            if (payload && payload.language) {
+                lang = payload.language.split("-")[0];
+            } else if (this.config && this.config.language) {
+                lang = this.config.language.split("-")[0];
+            }
+
             const translations = this.loadTranslations(lang);
 
             this.sendSocketNotification("BIRTHDAYS_LOADED", {
