@@ -27,32 +27,28 @@ module.exports = NodeHelper.create({
     },
 
     startWebServer: function () {
-        const app = this.expressApp;
-
+        const app = express();
         app.use(express.json());
+        app.use(express.static(path.join(__dirname, "public")));
 
-        // Static bestanden
-        app.use("/mybirthdays", express.static(path.join(__dirname, "public")));
-
-        // Homepage
         app.get("/mybirthdays", (req, res) => {
             res.sendFile(path.join(__dirname, "public", "index.html"));
         });
 
-        // Data ophalen
         app.get("/mybirthdays/api/birthdays", (req, res) => {
             res.json(this.data);
         });
 
-        // Data opslaan
         app.post("/mybirthdays/api/birthdays", (req, res) => {
-            this.data = Array.isArray(req.body) ? req.body : [];
+            this.data = req.body;
             fs.writeFileSync(this.filePath, JSON.stringify(this.data, null, 2));
-
-            // realtime update mirror
             this.sendSocketNotification("BIRTHDAYS_LOADED", this.data);
-
             res.json({ status: "ok" });
+        });
+
+        const port = 3123;
+        app.listen(port, () => {
+            console.log(`MMM-MyBirthdays webserver op poort ${port}`);
         });
     },
 
