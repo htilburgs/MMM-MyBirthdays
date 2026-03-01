@@ -17,9 +17,7 @@ module.exports = NodeHelper.create({
     loadBirthdays: function () {
         try {
             if (fs.existsSync(this.birthdaysFile)) {
-                this.birthdays = JSON.parse(
-                    fs.readFileSync(this.birthdaysFile, "utf8")
-                );
+                this.birthdays = JSON.parse(fs.readFileSync(this.birthdaysFile, "utf8"));
             } else {
                 fs.writeFileSync(this.birthdaysFile, JSON.stringify([], null, 2));
                 this.birthdays = [];
@@ -40,7 +38,7 @@ module.exports = NodeHelper.create({
             }
         }
 
-        // fallback to English
+        // fallback English
         const fallbackPath = path.join(this.translationsDir, "en.json");
         if (fs.existsSync(fallbackPath)) {
             try {
@@ -53,7 +51,7 @@ module.exports = NodeHelper.create({
         return { B_Name: "Name", B_Age: "Age", B_Date: "Birthdate", B_Days: "Days" };
     },
 
-    // Sort birthdays by next upcoming date
+    // Sorteer verjaardagen op volgende datum
     getSortedBirthdays: function (list) {
         const today = new Date();
 
@@ -66,9 +64,7 @@ module.exports = NodeHelper.create({
             const [, month, day] = parts.map(Number);
             const next = new Date(today.getFullYear(), month - 1, day);
 
-            if (next < today) {
-                next.setFullYear(today.getFullYear() + 1);
-            }
+            if (next < today) next.setFullYear(today.getFullYear() + 1);
             return next;
         };
 
@@ -77,37 +73,25 @@ module.exports = NodeHelper.create({
 
     registerRoutes: function () {
         const app = this.expressApp;
-        if (!app) {
-            console.error("Express app not found! Cannot register /mybirthdays route.");
-            return;
-        }
+        if (!app) return console.error("Express app not found!");
 
-        // Enable JSON body parsing
         app.use(require("express").json());
-
-        // Serve static files
         app.use("/mybirthdays", require("express").static(path.join(__dirname, "public")));
 
-        // Homepage
         app.get("/mybirthdays", (req, res) => {
             res.sendFile(path.join(__dirname, "public", "index.html"));
         });
 
-        // API
         app.get("/api/birthdays", (req, res) => {
             res.json(this.getSortedBirthdays(this.birthdays));
         });
 
         app.post("/api/birthdays", (req, res) => {
-            if (!Array.isArray(req.body)) {
+            if (!Array.isArray(req.body))
                 return res.status(400).json({ status: "error", message: "Invalid data" });
-            }
 
             this.birthdays = req.body;
-            fs.writeFileSync(
-                this.birthdaysFile,
-                JSON.stringify(this.birthdays, null, 2)
-            );
+            fs.writeFileSync(this.birthdaysFile, JSON.stringify(this.birthdays, null, 2));
 
             this.sendSocketNotification("BIRTHDAYS_LOADED", {
                 birthdays: this.getSortedBirthdays(this.birthdays)
@@ -121,17 +105,14 @@ module.exports = NodeHelper.create({
 
     socketNotificationReceived: function (notification, payload) {
         if (notification === "LOAD_BIRTHDAYS") {
-            // Multi-language auto detection from frontend
-            let lang = "en";
-            if (payload && payload.language) {
-                lang = payload.language.split("-")[0];
-            }
+            // Gebruik frontend-taal, fallback naar "en"
+            const lang = (payload && payload.language) || "en";
             const translations = this.loadTranslations(lang);
 
             this.sendSocketNotification("BIRTHDAYS_LOADED", {
                 birthdays: this.getSortedBirthdays(this.birthdays),
                 translations: translations,
-                language: lang // send detected language back to frontend
+                language: lang // frontend kan dit gebruiken
             });
         }
     }
