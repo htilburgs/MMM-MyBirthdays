@@ -2,18 +2,20 @@ Module.register("MMM-MyBirthdays", {
     defaults: {
         maxItems: 5,
         showColumnHeaders: true,
-        language: null // null = auto detect
+        language: null // null = detect MagicMirror language
     },
 
     start: function () {
         this.birthdays = [];
         this.translations = { B_Name: "Name", B_Age: "Age", B_Date: "Birthdate", B_Days: "Days" };
 
+        // Detect MagicMirror language
         const mmLang =
             (this.config.language && this.config.language.split("-")[0]) ||
             (window.config && window.config.language && window.config.language.split("-")[0]) ||
             "en";
 
+        // Stuur altijd de gedetecteerde taal naar NodeHelper
         this.sendSocketNotification("LOAD_BIRTHDAYS", { language: mmLang });
     },
 
@@ -21,7 +23,10 @@ Module.register("MMM-MyBirthdays", {
         if (notification === "BIRTHDAYS_LOADED") {
             this.birthdays = payload.birthdays || [];
             this.translations = payload.translations || this.translations;
-            this.config.language = payload.language || this.config.language;
+
+            // Bewaar de taal van NodeHelper
+            if (payload.language) this.config.language = payload.language;
+
             this.updateDom();
         }
     },
@@ -43,14 +48,13 @@ Module.register("MMM-MyBirthdays", {
             return Math.round((nextBD - todayMid) / (1000 * 60 * 60 * 24));
         }
 
+        // Sorteer op aankomende verjaardagen
         const sorted = this.birthdays
             .slice()
-            .sort(
-                (a, b) =>
-                    getDaysLeft(new Date(a.birthdate)) - getDaysLeft(new Date(b.birthdate))
-            )
+            .sort((a, b) => getDaysLeft(new Date(a.birthdate)) - getDaysLeft(new Date(b.birthdate)))
             .slice(0, this.config.maxItems);
 
+        // Kolom headers
         if (this.config.showColumnHeaders) {
             const headerRow = document.createElement("tr");
             headerRow.innerHTML = `
