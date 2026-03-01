@@ -1,5 +1,8 @@
 Module.register("MMM-MyBirthdays", {
-    defaults: {},
+    defaults: {
+        maxItems: 5,            // aantal weergegeven verjaardagen
+        showColumnHeaders: true // toon kolomnamen
+    },
 
     start: function () {
         this.birthdays = [];
@@ -21,15 +24,6 @@ Module.register("MMM-MyBirthdays", {
         const wrapper = document.createElement("table");
         wrapper.className = "birthdays-table";
 
-        const header = document.createElement("tr");
-        header.innerHTML = `
-            <th>Naam</th>
-            <th>Leeftijd</th>
-            <th>Geboortedatum</th>
-            <th>Dagen</th>
-        `;
-        wrapper.appendChild(header);
-
         const today = new Date();
         const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
@@ -48,7 +42,22 @@ Module.register("MMM-MyBirthdays", {
             return getDaysLeft(aDate) - getDaysLeft(bDate);
         });
 
-        sorted.forEach((person, index) => {
+        // Beperk tot maxItems
+        const displayed = sorted.slice(0, this.config.maxItems);
+
+        // Kolomheaders tonen of niet
+        if (this.config.showColumnHeaders) {
+            const header = document.createElement("tr");
+            header.innerHTML = `
+                <th>Naam</th>
+                <th>Leeftijd</th>
+                <th>Geboortedatum</th>
+                <th>Dagen</th>
+            `;
+            wrapper.appendChild(header);
+        }
+
+        displayed.forEach((person, index) => {
             const birthDate = new Date(person.birthdate);
             if (isNaN(birthDate)) return;
 
@@ -68,7 +77,7 @@ Module.register("MMM-MyBirthdays", {
                 <td>${person.name}</td>
                 <td>${age}</td>
                 <td>${birthDate.toLocaleDateString("nl-NL", { day: "2-digit", month: "long" })}</td>
-                <td>${daysLeft === 0 ? "🎂 " : daysLeft}</td>
+                <td>${daysLeft === 0 ? "🎂 Vandaag!" : daysLeft}</td>
             `;
             wrapper.appendChild(row);
         });
