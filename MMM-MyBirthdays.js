@@ -32,14 +32,14 @@ Module.register("MMM-MyBirthdays", {
 
         const today = new Date();
 
-        // UTC-fix: alleen jaar/maand/dag vergelijken
+        // Helper: volgende verjaardag in lokale tijd
         function getNextBirthday(birthDate) {
             const next = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
             if (
                 next.getFullYear() === today.getFullYear() &&
                 next.getMonth() === today.getMonth() &&
                 next.getDate() === today.getDate()
-            ) return next;
+            ) return next; // vandaag
             if (next < today) next.setFullYear(today.getFullYear() + 1);
             return next;
         }
@@ -49,27 +49,32 @@ Module.register("MMM-MyBirthdays", {
             return getNextBirthday(new Date(a.birthdate)) - getNextBirthday(new Date(b.birthdate));
         });
 
-        sorted.forEach(person => {
+        sorted.forEach((person, index) => {
             const birthDate = new Date(person.birthdate);
             if (isNaN(birthDate)) return;
 
             let age = today.getFullYear() - birthDate.getFullYear();
-            if (
-                today < new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate())
-            ) age--;
+            if (today < new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate())) age--;
 
             const nextBD = getNextBirthday(birthDate);
             const daysLeft = Math.ceil((nextBD - today) / (1000 * 60 * 60 * 24));
 
             const row = document.createElement("tr");
-            if (daysLeft === 0) row.classList.add("today");
-            else if (daysLeft <= 7) row.classList.add("upcoming");
+
+            // Eerste rij altijd highlight
+            if (index === 0) {
+                row.classList.add("highlight");
+            } else if (daysLeft === 0) {
+                row.classList.add("today");
+            } else if (daysLeft <= 7) {
+                row.classList.add("upcoming");
+            }
 
             row.innerHTML = `
                 <td>${person.name}</td>
                 <td>${age}</td>
                 <td>${birthDate.toLocaleDateString("nl-NL", { day: "2-digit", month: "long" })}</td>
-                <td>${daysLeft === 0 ? "🎂" : daysLeft}</td>
+                <td>${daysLeft === 0 ? "🎉 Vandaag!" : daysLeft}</td>
             `;
             wrapper.appendChild(row);
         });
