@@ -1,11 +1,28 @@
 const API_BASE = "/mybirthdays/api/birthdays";
 
 let birthdays = [];
+let filterText = "";
 
-// Init: fetch data en event listener voor toevoegen
+// Init
 window.addEventListener("load", async () => {
     await load();
+
     document.getElementById("add-btn").addEventListener("click", addBirthday);
+
+    const filterInput = document.getElementById("filter-input");
+
+    // Live filter
+    filterInput.addEventListener("input", e => {
+        filterText = e.target.value.toLowerCase();
+        render();
+    });
+
+    // Reset filter
+    document.getElementById("reset-filter-btn").addEventListener("click", () => {
+        filterText = "";
+        filterInput.value = "";
+        render();
+    });
 });
 
 // ===== Load & Save =====
@@ -13,6 +30,7 @@ async function load() {
     try {
         const res = await fetch(API_BASE);
         birthdays = await res.json();
+        sortBirthdays();
         render();
     } catch (err) {
         console.error("Fout bij laden verjaardagen:", err);
@@ -26,21 +44,17 @@ async function save() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(birthdays)
         });
-        render(); // Realtime update
+        sortBirthdays();
+        render();
     } catch (err) {
         console.error("Fout bij opslaan:", err);
     }
 }
 
-// ===== Render tabel =====
-function render() {
-    const tbody = document.getElementById("list");
-    tbody.innerHTML = "";
-
+// ===== Sorteren =====
+function sortBirthdays() {
     const today = new Date();
-
-    // Sorteer op eerstvolgende verjaardag
-    const sorted = birthdays.slice().sort((a, b) => {
+    birthdays.sort((a, b) => {
         function nextBD(dateStr) {
             const d = new Date(dateStr);
             let next = new Date(today.getFullYear(), d.getMonth(), d.getDate());
@@ -49,21 +63,32 @@ function render() {
         }
         return nextBD(a.birthdate) - nextBD(b.birthdate);
     });
+}
 
-    sorted.forEach((b, index) => {
+// ===== Render tabel =====
+function render() {
+    const tbody = document.getElementById("list");
+    tbody.innerHTML = "";
+    const today = new Date();
+
+    birthdays.forEach((b, index) => {
         const birthDate = new Date(b.birthdate);
         if (isNaN(birthDate)) return;
+
+        // Filter
+        const isMatching = !filterText || b.name.toLowerCase().includes(filterText);
 
         const age = calculateAge(birthDate, today);
         const daysLeft = calculateDaysLeft(birthDate, today);
 
         const row = document.createElement("tr");
 
-        let className = "";
-        if (daysLeft === 0) className = "today";
-        else if (daysLeft <= 7) className = "upcoming";
+        // Highlight vandaag / komende 7 dagen
+        if (daysLeft === 0) row.classList.add("today");
+        else if (daysLeft <= 7) row.classList.add("upcoming");
 
-        row.className = className;
+        // Visueel filteren
+        if (!isMatching) row.classList.add("not-matching");
 
         row.innerHTML = `
             <td><input class="edit-name" data-index="${index}" value="${b.name}"></td>
@@ -130,5 +155,7 @@ function addBirthday() {
     birthdays.push({ name, birthdate });
     nameInput.value = "";
     birthdateInput.value = "";
+
+    sortBirthdays();
     save();
 }
