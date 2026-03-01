@@ -1,7 +1,7 @@
 Module.register("MMM-MyBirthdays", {
     defaults: {
-        maxItems: 5,            // aantal weergegeven verjaardagen
-        showColumnHeaders: true // toon kolomnamen
+        maxItems: 5,            // number of birthdays to display
+        showColumnHeaders: true // show column headers
     },
 
     start: function () {
@@ -27,7 +27,7 @@ Module.register("MMM-MyBirthdays", {
         const today = new Date();
         const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
-        // Helper: bereken dagen tot volgende verjaardag
+        // Helper: calculate days until next birthday
         function getDaysLeft(birthDate) {
             let nextBD = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
             if (nextBD < todayMid) nextBD.setFullYear(today.getFullYear() + 1);
@@ -35,24 +35,24 @@ Module.register("MMM-MyBirthdays", {
             return Math.round(diffTime / (1000 * 60 * 60 * 24));
         }
 
-        // Sorteer alles op komende verjaardag
+        // Sort all birthdays by upcoming date
         const sorted = this.birthdays.slice().sort((a, b) => {
             const aDate = new Date(a.birthdate);
             const bDate = new Date(b.birthdate);
             return getDaysLeft(aDate) - getDaysLeft(bDate);
         });
 
-        // Beperk tot maxItems
+        // Limit to maxItems
         const displayed = sorted.slice(0, this.config.maxItems);
 
-        // Kolomheaders tonen of niet
+        // Show column headers or not
         if (this.config.showColumnHeaders) {
             const header = document.createElement("tr");
             header.innerHTML = `
-                <th>Naam</th>
-                <th>Leeftijd</th>
-                <th>Geboortedatum</th>
-                <th>Dagen</th>
+                <th>Name</th>
+                <th>Age</th>
+                <th>Birthdate</th>
+                <th>Days</th>
             `;
             wrapper.appendChild(header);
         }
@@ -68,7 +68,7 @@ Module.register("MMM-MyBirthdays", {
 
             const row = document.createElement("tr");
 
-            // Eerste rij krijgt altijd .upcoming
+            // First row always gets .upcoming
             if (index === 0) {
                 row.classList.add("upcoming");
             }
@@ -77,7 +77,7 @@ Module.register("MMM-MyBirthdays", {
                 <td>${person.name}</td>
                 <td>${age}</td>
                 <td>${birthDate.toLocaleDateString("nl-NL", { day: "2-digit", month: "long" })}</td>
-                <td>${daysLeft === 0 ? "🎂 Vandaag!" : daysLeft}</td>
+                <td>${daysLeft === 0 ? "🎂" : daysLeft}</td>
             `;
             wrapper.appendChild(row);
         });
