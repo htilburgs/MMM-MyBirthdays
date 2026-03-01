@@ -58,3 +58,18 @@ input[type="date"] {
     opacity: 0.3;      /* lichte transparantie voor niet-overeenkomende rijen */
     transition: opacity 0.2s;
 }
+
+.filter-container {
+    margin: 10px 0;
+}
+
+#filter-input {
+    padding: 4px;
+    width: 200px;
+    margin-right: 8px;
+}
+
+#reset-filter-btn {
+    padding: 4px 8px;
+    cursor: pointer;
+}
