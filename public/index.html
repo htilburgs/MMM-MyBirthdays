@@ -1,38 +1,23 @@
 <!DOCTYPE html>
-<html lang="nl">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>MyBirthdays Beheer</title>
+    <title>MyBirthdays</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<h2>Verjaardagen beheren</h2>
+<h2>Manage Birthdays</h2>
 
-<!-- Formulier toevoegen -->
-<div class="add-form">
-    <input id="name" placeholder="Naam">
+<div>
+    <input id="search" placeholder="Search..." oninput="filterList()">
+    <input id="name" placeholder="Name">
     <input id="birthdate" type="date">
-    <button id="add-btn">Toevoegen</button>
+    <button onclick="addBirthday()">Add</button>
 </div>
 
-<!-- Filter + reset -->
-<div class="filter-container">
-    <input id="filter-input" placeholder="Filter op naam...">
-    <button id="reset-filter-btn">Reset filter</button>
-</div>
-
-<!-- Tabel -->
 <table>
-    <thead>
-        <tr>
-            <th>Naam</th>
-            <th>Geboortedatum</th>
-            <th>Leeftijd</th>
-            <th>Dagen</th>
-            <th>Acties</th>
-        </tr>
-    </thead>
+    <thead id="table-header"></thead>
     <tbody id="list"></tbody>
 </table>
 
