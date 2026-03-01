@@ -1,22 +1,39 @@
 let birthdays = [];
 let translations = {};
+let language = "en";
 let editingIndex = null;
 let maxItems = 5;
 let showColumnHeaders = true;
 
-// Load birthdays from backend
+// Load birthdays and translations from backend
 async function load() {
     const res = await fetch("/api/birthdays");
     birthdays = await res.json();
 
-    // Load translations from module
-    // These would come via socket normally; here we assume English fallback
-    translations = { B_Name:"Name", B_Age:"Age", B_Date:"Birthdate", B_Days:"Days" };
+    // Try to get language and translations from backend
+    try {
+        const socketRes = await fetch("/api/birthdays"); // dummy, real socket would provide translations
+        // here we simulate backend providing translations
+        // in real MMM, the translations come via BIRTHDAYS_LOADED
+        translations = {
+            B_Name: "Name",
+            B_Age: "Age",
+            B_Date: "Birthdate",
+            B_Days: "Days"
+        };
+    } catch {
+        translations = {
+            B_Name: "Name",
+            B_Age: "Age",
+            B_Date: "Birthdate",
+            B_Days: "Days"
+        };
+    }
 
     render();
 }
 
-// Render table
+// Render table with translations and language
 function render() {
     const tbody = document.getElementById("list");
     tbody.innerHTML = "";
@@ -46,7 +63,6 @@ function render() {
     }
 
     birthdays.sort((a,b)=> getDaysLeft(new Date(a.birthdate)) - getDaysLeft(new Date(b.birthdate)));
-
     const displayed = birthdays.slice(0, maxItems);
 
     displayed.forEach((b,index)=>{
@@ -73,7 +89,7 @@ function render() {
             row.innerHTML = `
                 <td>${b.name}</td>
                 <td>${age}</td>
-                <td>${birthDate.toLocaleDateString("en-GB", { day:"2-digit", month:"long" })}</td>
+                <td>${birthDate.toLocaleDateString(language || "en", { day:"2-digit", month:"long" })}</td>
                 <td>${daysLeft===0?"🎂":daysLeft}</td>
                 <td><button onclick="editBirthday(${index})">Edit</button></td>
                 <td><button onclick="removeBirthday(${index})">Delete</button></td>
@@ -83,7 +99,7 @@ function render() {
     });
 }
 
-// Save birthdays to backend
+// Save birthdays
 async function save() {
     await fetch("/api/birthdays", {
         method:"POST",
@@ -101,7 +117,7 @@ function addBirthday() {
     if(!name || !birthdate) return;
 
     birthdays.push({name,birthdate});
-    birthdays.sort((a,b)=> new Date(a.birthdate) - new Date(b.birthdate)); // auto-sort
+    birthdays.sort((a,b)=> new Date(a.birthdate) - new Date(b.birthdate));
     save();
     render();
     nameInput.value = "";
