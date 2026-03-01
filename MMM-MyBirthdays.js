@@ -2,37 +2,37 @@ Module.register("MMM-MyBirthdays", {
     defaults: {
         maxItems: 5,
         showColumnHeaders: true,
-        language: null // null = use MagicMirror language
+        language: null // null = use MM language
     },
 
-    start: function() {
+    start: function () {
         this.birthdays = [];
         this.translations = { B_Name: "Name", B_Age: "Age", B_Date: "Birthdate", B_Days: "Days" };
 
-        // Resolve language: module override or MM language
-        this.lang = this.config.language || (window.config?.language) || "en";
+        // Detect MM language
+        let mmLang = this.config.language;
+        if (!mmLang && window.config && window.config.language) {
+            mmLang = window.config.language;
+        }
+        if (!mmLang) mmLang = "en"; // fallback
 
-        // Load birthdays and translations from helper
-        this.sendSocketNotification("LOAD_BIRTHDAYS", { language: this.lang });
+        this.sendSocketNotification("LOAD_BIRTHDAYS", { language: mmLang });
     },
 
-    socketNotificationReceived: function(notification, payload) {
+    socketNotificationReceived: function (notification, payload) {
         if (notification === "BIRTHDAYS_LOADED") {
             this.birthdays = payload.birthdays || [];
             this.translations = payload.translations || this.translations;
-
-            // Only update language if module language parameter is null
-            if (!this.config.language) this.lang = payload.language || this.lang;
-
+            this.config.language = payload.language || this.config.language;
             this.updateDom();
         }
     },
 
-    getStyles: function() {
+    getStyles: function () {
         return ["MMM-MyBirthdays.css"];
     },
 
-    getDom: function() {
+    getDom: function () {
         const wrapper = document.createElement("table");
         wrapper.className = "birthdays-table";
 
@@ -46,9 +46,7 @@ Module.register("MMM-MyBirthdays", {
         }
 
         // Sort birthdays by upcoming
-        const sorted = this.birthdays.slice().sort(
-            (a, b) => getDaysLeft(new Date(a.birthdate)) - getDaysLeft(new Date(b.birthdate))
-        );
+        const sorted = this.birthdays.slice().sort((a, b) => getDaysLeft(new Date(a.birthdate)) - getDaysLeft(new Date(b.birthdate)));
         const displayed = sorted.slice(0, this.config.maxItems);
 
         // Column headers
@@ -63,7 +61,6 @@ Module.register("MMM-MyBirthdays", {
             wrapper.appendChild(headerRow);
         }
 
-        // Render birthdays
         displayed.forEach((person, index) => {
             const birthDate = new Date(person.birthdate);
             if (isNaN(birthDate)) return;
@@ -79,7 +76,7 @@ Module.register("MMM-MyBirthdays", {
             row.innerHTML = `
                 <td>${person.name}</td>
                 <td>${age}</td>
-                <td>${birthDate.toLocaleDateString(this.lang, { day: "2-digit", month: "long" })}</td>
+                <td>${birthDate.toLocaleDateString(this.config.language || "en", { day: "2-digit", month: "long" })}</td>
                 <td>${daysLeft === 0 ? "🎂" : daysLeft}</td>
             `;
             wrapper.appendChild(row);
