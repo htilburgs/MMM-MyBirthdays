@@ -2,42 +2,61 @@ const API_BASE = "/mybirthdays/api/birthdays";
 
 let birthdays = [];
 
-// Init: fetch en event listener toevoegen
+// Init: fetch data en event listener voor toevoegen
 window.addEventListener("load", async () => {
     await load();
     document.getElementById("add-btn").addEventListener("click", addBirthday);
 });
 
-// Load birthdays van backend
+// ===== Load & Save =====
 async function load() {
-    const res = await fetch(API_BASE);
-    birthdays = await res.json();
-    render();
+    try {
+        const res = await fetch(API_BASE);
+        birthdays = await res.json();
+        render();
+    } catch (err) {
+        console.error("Fout bij laden verjaardagen:", err);
+    }
 }
 
-// Save birthdays naar backend
 async function save() {
-    await fetch(API_BASE, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(birthdays)
-    });
-    render(); // realtime update
+    try {
+        await fetch(API_BASE, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(birthdays)
+        });
+        render(); // Realtime update
+    } catch (err) {
+        console.error("Fout bij opslaan:", err);
+    }
 }
 
-// Render de tabel
+// ===== Render tabel =====
 function render() {
     const tbody = document.getElementById("list");
     tbody.innerHTML = "";
 
     const today = new Date();
 
-    birthdays.forEach((b, index) => {
+    // Sorteer op eerstvolgende verjaardag
+    const sorted = birthdays.slice().sort((a, b) => {
+        function nextBD(dateStr) {
+            const d = new Date(dateStr);
+            let next = new Date(today.getFullYear(), d.getMonth(), d.getDate());
+            if (next < today) next.setFullYear(today.getFullYear() + 1);
+            return next;
+        }
+        return nextBD(a.birthdate) - nextBD(b.birthdate);
+    });
+
+    sorted.forEach((b, index) => {
         const birthDate = new Date(b.birthdate);
         if (isNaN(birthDate)) return;
 
         const age = calculateAge(birthDate, today);
         const daysLeft = calculateDaysLeft(birthDate, today);
+
         const row = document.createElement("tr");
 
         let className = "";
@@ -55,10 +74,11 @@ function render() {
                 <button class="remove-btn" data-index="${index}">Verwijder</button>
             </td>
         `;
+
         tbody.appendChild(row);
     });
 
-    // Event listeners voor inline edits
+    // Event listeners inline edits
     document.querySelectorAll(".edit-name").forEach(input => {
         input.addEventListener("change", e => {
             const idx = e.target.dataset.index;
@@ -77,14 +97,14 @@ function render() {
 
     document.querySelectorAll(".remove-btn").forEach(btn => {
         btn.addEventListener("click", e => {
-            const idx = e.target.dataset.index;
+            const idx = btn.dataset.index;
             birthdays.splice(idx, 1);
             save();
         });
     });
 }
 
-// Helpers
+// ===== Helpers =====
 function calculateAge(birthDate, today) {
     let age = today.getFullYear() - birthDate.getFullYear();
     if (today < new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate())) age--;
@@ -97,13 +117,16 @@ function calculateDaysLeft(birthDate, today) {
     return Math.ceil((nextBirthday - today) / (1000 * 60 * 60 * 24));
 }
 
-// Toevoegen
+// ===== Toevoegen =====
 function addBirthday() {
     const nameInput = document.getElementById("name");
     const birthdateInput = document.getElementById("birthdate");
+
     const name = nameInput.value.trim();
     const birthdate = birthdateInput.value;
+
     if (!name || !birthdate) return;
+
     birthdays.push({ name, birthdate });
     nameInput.value = "";
     birthdateInput.value = "";
