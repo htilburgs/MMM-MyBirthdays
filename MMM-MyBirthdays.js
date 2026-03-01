@@ -2,21 +2,24 @@ Module.register("MMM-MyBirthdays", {
     defaults: {
         maxItems: 5,
         showColumnHeaders: true,
-        language: null // null = use MM language
+        language: null // null = auto-detect MagicMirror language
     },
 
     start: function () {
         this.birthdays = [];
         this.translations = { B_Name: "Name", B_Age: "Age", B_Date: "Birthdate", B_Days: "Days" };
 
-        // Detect MM language
-        let mmLang = this.config.language;
-        if (!mmLang && window.config && window.config.language) {
-            mmLang = window.config.language;
-        }
-        if (!mmLang) mmLang = "en"; // fallback
-
+        // ✅ Auto-detect MM language
+        const mmLang = this.getLanguage();
         this.sendSocketNotification("LOAD_BIRTHDAYS", { language: mmLang });
+    },
+
+    // ✅ Auto-detect language function
+    getLanguage: function () {
+        // priority: module config -> window.config.language -> 'en'
+        if (this.config.language) return this.config.language.split("-")[0];
+        if (window.config && window.config.language) return window.config.language.split("-")[0];
+        return "en";
     },
 
     socketNotificationReceived: function (notification, payload) {
@@ -46,7 +49,12 @@ Module.register("MMM-MyBirthdays", {
         }
 
         // Sort birthdays by upcoming
-        const sorted = this.birthdays.slice().sort((a, b) => getDaysLeft(new Date(a.birthdate)) - getDaysLeft(new Date(b.birthdate)));
+        const sorted = this.birthdays
+            .slice()
+            .sort(
+                (a, b) =>
+                    getDaysLeft(new Date(a.birthdate)) - getDaysLeft(new Date(b.birthdate))
+            );
         const displayed = sorted.slice(0, this.config.maxItems);
 
         // Column headers
@@ -66,7 +74,8 @@ Module.register("MMM-MyBirthdays", {
             if (isNaN(birthDate)) return;
 
             let age = today.getFullYear() - birthDate.getFullYear();
-            if (today < new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate())) age--;
+            if (today < new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate()))
+                age--;
 
             const daysLeft = getDaysLeft(birthDate);
 
@@ -76,7 +85,10 @@ Module.register("MMM-MyBirthdays", {
             row.innerHTML = `
                 <td>${person.name}</td>
                 <td>${age}</td>
-                <td>${birthDate.toLocaleDateString(this.config.language || "en", { day: "2-digit", month: "long" })}</td>
+                <td>${birthDate.toLocaleDateString(
+                    this.config.language || "en",
+                    { day: "2-digit", month: "long" }
+                )}</td>
                 <td>${daysLeft === 0 ? "🎂" : daysLeft}</td>
             `;
             wrapper.appendChild(row);
