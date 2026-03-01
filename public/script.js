@@ -51,53 +51,61 @@ async function save() {
     }
 }
 
+// ===== Helpers =====
+function calculateAge(birthDate, today) {
+    let age = today.getFullYear() - birthDate.getFullYear();
+    if (today < new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate())) age--;
+    return age;
+}
+
+function getNextBirthday(birthDate) {
+    const today = new Date();
+    const next = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+    if (
+        next.getFullYear() === today.getFullYear() &&
+        next.getMonth() === today.getMonth() &&
+        next.getDate() === today.getDate()
+    ) return next;
+    if (next < today) next.setFullYear(today.getFullYear() + 1);
+    return next;
+}
+
+function calculateDaysLeft(birthDate) {
+    const today = new Date();
+    const nextBD = getNextBirthday(birthDate);
+    return Math.ceil((nextBD - today) / (1000 * 60 * 60 * 24));
+}
+
 // ===== Sorteren =====
 function sortBirthdays() {
-    const today = new Date();
-    birthdays.sort((a, b) => {
-        function nextBD(dateStr) {
-            const d = new Date(dateStr);
-            let next = new Date(today.getFullYear(), d.getMonth(), d.getDate());
-            if (next < today) next.setFullYear(today.getFullYear() + 1);
-            return next;
-        }
-        return nextBD(a.birthdate) - nextBD(b.birthdate);
-    });
+    birthdays.sort((a, b) => getNextBirthday(new Date(a.birthdate)) - getNextBirthday(new Date(b.birthdate)));
 }
 
 // ===== Render tabel =====
 function render() {
     const tbody = document.getElementById("list");
     tbody.innerHTML = "";
-    const today = new Date();
 
     birthdays.forEach((b, index) => {
         const birthDate = new Date(b.birthdate);
         if (isNaN(birthDate)) return;
 
-        // Filter
+        const age = calculateAge(birthDate);
+        const daysLeft = calculateDaysLeft(birthDate);
         const isMatching = !filterText || b.name.toLowerCase().includes(filterText);
-
-        const age = calculateAge(birthDate, today);
-        const daysLeft = calculateDaysLeft(birthDate, today);
 
         const row = document.createElement("tr");
 
-        // Highlight vandaag / komende 7 dagen
         if (daysLeft === 0) row.classList.add("today");
         else if (daysLeft <= 7) row.classList.add("upcoming");
-
-        // Visueel filteren
         if (!isMatching) row.classList.add("not-matching");
 
         row.innerHTML = `
             <td><input class="edit-name" data-index="${index}" value="${b.name}"></td>
             <td><input type="date" class="edit-birthdate" data-index="${index}" value="${b.birthdate}"></td>
-            <td>${age}</td>
+            <td>${birthDate.toLocaleDateString("nl-NL", { day: "2-digit", month: "long" })}</td>
             <td>${daysLeft === 0 ? "🎉 Vandaag!" : daysLeft}</td>
-            <td>
-                <button class="remove-btn" data-index="${index}">Verwijder</button>
-            </td>
+            <td><button class="remove-btn" data-index="${index}">Verwijder</button></td>
         `;
 
         tbody.appendChild(row);
@@ -129,19 +137,6 @@ function render() {
     });
 }
 
-// ===== Helpers =====
-function calculateAge(birthDate, today) {
-    let age = today.getFullYear() - birthDate.getFullYear();
-    if (today < new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate())) age--;
-    return age;
-}
-
-function calculateDaysLeft(birthDate, today) {
-    let nextBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
-    if (nextBirthday < today) nextBirthday.setFullYear(today.getFullYear() + 1);
-    return Math.ceil((nextBirthday - today) / (1000 * 60 * 60 * 24));
-}
-
 // ===== Toevoegen =====
 function addBirthday() {
     const nameInput = document.getElementById("name");
@@ -149,7 +144,6 @@ function addBirthday() {
 
     const name = nameInput.value.trim();
     const birthdate = birthdateInput.value;
-
     if (!name || !birthdate) return;
 
     birthdays.push({ name, birthdate });
