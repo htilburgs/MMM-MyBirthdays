@@ -33,3 +33,8 @@
 .birthdays-table td {
     word-break: break-word;
 }
+
+.upcoming {
+    color: #ffd700;
+    font-weight: bold;
+}
