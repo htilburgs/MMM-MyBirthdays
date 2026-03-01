@@ -34,7 +34,8 @@
     word-break: break-word;
 }
 
+/* First upcoming birthday always highlighted */
 .upcoming {
-    color: #ffd700; 
+    color: #ffd700;
     font-weight: bold;
 }
