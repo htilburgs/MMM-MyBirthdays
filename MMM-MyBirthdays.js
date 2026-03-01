@@ -2,31 +2,29 @@ Module.register("MMM-MyBirthdays", {
     defaults: {
         maxItems: 5,
         showColumnHeaders: true,
-        language: null // null = auto detect
+        language: null
     },
 
     start: function () {
         this.birthdays = [];
         this.translations = { B_Name: "Name", B_Age: "Age", B_Date: "Birthdate", B_Days: "Days" };
 
-        // ✅ detect MagicMirror language
-        const mmLang =
-            (this.config.language && this.config.language.split("-")[0]) ||
-            (window.config && window.config.language && window.config.language.split("-")[0]) ||
-            "en";
+        // ⚡️ Detect MagicMirror language na korte delay
+        setTimeout(() => {
+            const mmLang =
+                (this.config.language && this.config.language.split("-")[0]) ||
+                (window.config && window.config.language && window.config.language.split("-")[0]) ||
+                "en";
 
-        // ✅ stuur altijd de taal expliciet naar NodeHelper
-        this.sendSocketNotification("LOAD_BIRTHDAYS", { language: mmLang });
+            this.sendSocketNotification("LOAD_BIRTHDAYS", { language: mmLang });
+        }, 100);
     },
 
     socketNotificationReceived: function (notification, payload) {
         if (notification === "BIRTHDAYS_LOADED") {
             this.birthdays = payload.birthdays || [];
             this.translations = payload.translations || this.translations;
-
-            // ✅ sla de taal op die NodeHelper terugstuurt
             if (payload.language) this.config.language = payload.language;
-
             this.updateDom();
         }
     },
@@ -48,13 +46,11 @@ Module.register("MMM-MyBirthdays", {
             return Math.round((nextBD - todayMid) / (1000 * 60 * 60 * 24));
         }
 
-        // sorteer op aankomende verjaardagen
         const sorted = this.birthdays
             .slice()
-            .sort((a, b) => getDaysLeft(new Date(a.birthdate)) - getDaysLeft(new Date(b.birthdate)))
+            .sort((a, b) => getDaysLeft(new Date(a.date)) - getDaysLeft(new Date(b.date)))
             .slice(0, this.config.maxItems);
 
-        // headers
         if (this.config.showColumnHeaders) {
             const headerRow = document.createElement("tr");
             headerRow.innerHTML = `
@@ -67,7 +63,7 @@ Module.register("MMM-MyBirthdays", {
         }
 
         sorted.forEach((person, index) => {
-            const birthDate = new Date(person.birthdate);
+            const birthDate = new Date(person.date);
             if (isNaN(birthDate)) return;
 
             let age = today.getFullYear() - birthDate.getFullYear();
