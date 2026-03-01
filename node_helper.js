@@ -1,6 +1,7 @@
 const NodeHelper = require("node_helper");
 const fs = require("fs");
 const path = require("path");
+const express = require("express");
 
 module.exports = NodeHelper.create({
     start: function () {
@@ -11,6 +12,7 @@ module.exports = NodeHelper.create({
         this.birthdays = [];
 
         this.loadBirthdays();
+        this.startWebServer();
     },
 
     loadBirthdays: function () {
@@ -45,7 +47,6 @@ module.exports = NodeHelper.create({
                 console.error(`Error parsing ${filePath}:`, e);
             }
         }
-
         // fallback to English
         const fallbackPath = path.join(this.translationsDir, "en.json");
         if (fs.existsSync(fallbackPath)) {
@@ -55,30 +56,44 @@ module.exports = NodeHelper.create({
                 console.error("Error parsing English fallback translation:", e);
             }
         }
-
-        // ultimate fallback
         return { B_Name: "Name", B_Age: "Age", B_Date: "Birthdate", B_Days: "Days" };
+    },
+
+    startWebServer: function () {
+        const app = express();
+        app.use(express.json());
+        app.use(express.static(path.join(__dirname, "public")));
+
+        // Serve homepage
+        app.get("/", (req, res) => {
+            res.sendFile(path.join(__dirname, "public", "index.html"));
+        });
+
+        // API: get birthdays
+        app.get("/api/birthdays", (req, res) => {
+            res.json(this.birthdays);
+        });
+
+        // API: save birthdays
+        app.post("/api/birthdays", (req, res) => {
+            const data = req.body;
+            this.saveBirthdays(data);
+            this.sendSocketNotification("BIRTHDAYS_LOADED", this.birthdays);
+            res.json({ status: "ok" });
+        });
+
+        const PORT = 8080;
+        app.listen(PORT, () => console.log(`MMM-MyBirthdays webserver running on port ${PORT}`));
     },
 
     socketNotificationReceived: function (notification, payload) {
         if (notification === "LOAD_BIRTHDAYS") {
             let lang = payload && payload.language ? payload.language : "en";
             const translations = this.loadTranslations(lang);
-
             this.sendSocketNotification("BIRTHDAYS_LOADED", {
                 birthdays: this.birthdays,
                 translations: translations,
                 language: lang
-            });
-        }
-
-        if (notification === "SAVE_BIRTHDAYS" && payload && Array.isArray(payload)) {
-            this.saveBirthdays(payload);
-            // broadcast updated data
-            this.sendSocketNotification("BIRTHDAYS_LOADED", {
-                birthdays: this.birthdays,
-                translations: this.loadTranslations(payload.language || "en"),
-                language: payload.language || "en"
             });
         }
     }
