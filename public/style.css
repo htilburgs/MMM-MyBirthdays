@@ -5,13 +5,13 @@ body {
     color: white;
 }
 
-input {
+.add-form input {
     margin: 4px 4px 4px 0;
     padding: 4px;
     font-size: 14px;
 }
 
-button {
+.add-form button {
     margin: 2px;
     padding: 4px 8px;
     font-size: 14px;
@@ -42,4 +42,14 @@ td button {
 
 input[type="date"] {
     padding: 2px 4px;
+}
+
+.upcoming {
+    color: #ffd700;
+    font-weight: bold;
+}
+
+.today {
+    color: #00ff00;
+    font-weight: bold;
 }
