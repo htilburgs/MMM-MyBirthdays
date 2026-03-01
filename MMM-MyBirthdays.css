@@ -34,16 +34,17 @@
     word-break: break-word;
 }
 
+/* Eerste regel highlight (vandaag of eerstvolgende verjaardag) */
 .highlight {
-    background-color: #00ff00; /* groen voor eerste rij of vandaag */
+    background-color: #00ff00; /* groen */
     font-weight: bold;
 }
 
-.today {
-    color: #00ff00;
+/* Alleen extra kleur voor verjaardagen binnen 7 dagen */
+.upcoming {
+    color: #ffd700; /* goud/geel */
     font-weight: bold;
 }
-
 .upcoming {
     color: #ffd700; /* goud/geel voor komende 7 dagen */
     font-weight: bold;
