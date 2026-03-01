@@ -9,7 +9,7 @@ Module.register("MMM-MyBirthdays", {
         this.birthdays = [];
         this.translations = { B_Name: "Name", B_Age: "Age", B_Date: "Birthdate", B_Days: "Days" };
 
-        // Detect MM language if null
+        // Detect MM language
         let mmLang = this.config.language;
         if (!mmLang && window.config && window.config.language) {
             mmLang = window.config.language;
@@ -45,7 +45,7 @@ Module.register("MMM-MyBirthdays", {
             return Math.round((nextBD - todayMid) / (1000 * 60 * 60 * 24));
         }
 
-        // Sort birthdays by upcoming date
+        // Sort birthdays by upcoming
         const sorted = this.birthdays.slice().sort((a, b) => getDaysLeft(new Date(a.birthdate)) - getDaysLeft(new Date(b.birthdate)));
         const displayed = sorted.slice(0, this.config.maxItems);
 
@@ -61,7 +61,6 @@ Module.register("MMM-MyBirthdays", {
             wrapper.appendChild(headerRow);
         }
 
-        // Table rows
         displayed.forEach((person, index) => {
             const birthDate = new Date(person.birthdate);
             if (isNaN(birthDate)) return;
@@ -70,9 +69,8 @@ Module.register("MMM-MyBirthdays", {
             if (today < new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate())) age--;
 
             const daysLeft = getDaysLeft(birthDate);
-            const row = document.createElement("tr");
 
-            // Always highlight first row
+            const row = document.createElement("tr");
             if (index === 0) row.classList.add("upcoming");
 
             row.innerHTML = `
