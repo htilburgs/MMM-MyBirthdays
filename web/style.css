@@ -1,0 +1,11 @@
+body { font-family: Arial, sans-serif; padding: 10px; }
+h1 { text-align: center; }
+
+#form-container { margin-bottom: 20px; }
+#form-container input { margin-right: 5px; }
+#form-container button { margin-right: 5px; }
+
+#birthdays-table { width: 100%; border-collapse: collapse; }
+#birthdays-table th, #birthdays-table td { padding: 5px; border: 1px solid #ccc; }
+#birthdays-table th { background: #333; color: white; }
+#birthdays-table td button { margin-right: 5px; }
