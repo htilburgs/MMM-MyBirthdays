@@ -32,15 +32,21 @@ Module.register("MMM-MyBirthdays", {
 
         const today = new Date();
 
+        // UTC-fix: alleen jaar/maand/dag vergelijken
+        function getNextBirthday(birthDate) {
+            const next = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+            if (
+                next.getFullYear() === today.getFullYear() &&
+                next.getMonth() === today.getMonth() &&
+                next.getDate() === today.getDate()
+            ) return next;
+            if (next < today) next.setFullYear(today.getFullYear() + 1);
+            return next;
+        }
+
         // Sorteer op komende verjaardag
         const sorted = this.birthdays.slice().sort((a, b) => {
-            function nextBD(dateStr) {
-                const d = new Date(dateStr);
-                let next = new Date(today.getFullYear(), d.getMonth(), d.getDate());
-                if (next < today) next.setFullYear(today.getFullYear() + 1);
-                return next;
-            }
-            return nextBD(a.birthdate) - nextBD(b.birthdate);
+            return getNextBirthday(new Date(a.birthdate)) - getNextBirthday(new Date(b.birthdate));
         });
 
         sorted.forEach(person => {
@@ -48,16 +54,12 @@ Module.register("MMM-MyBirthdays", {
             if (isNaN(birthDate)) return;
 
             let age = today.getFullYear() - birthDate.getFullYear();
-            const hasHadBirthday =
-                today.getMonth() > birthDate.getMonth() ||
-                (today.getMonth() === birthDate.getMonth() &&
-                 today.getDate() >= birthDate.getDate());
-            if (!hasHadBirthday) age--;
+            if (
+                today < new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate())
+            ) age--;
 
-            let nextBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
-            if (nextBirthday < today) nextBirthday.setFullYear(today.getFullYear() + 1);
-            const diffTime = nextBirthday - today;
-            const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const nextBD = getNextBirthday(birthDate);
+            const daysLeft = Math.ceil((nextBD - today) / (1000 * 60 * 60 * 24));
 
             const row = document.createElement("tr");
             if (daysLeft === 0) row.classList.add("today");
@@ -67,7 +69,7 @@ Module.register("MMM-MyBirthdays", {
                 <td>${person.name}</td>
                 <td>${age}</td>
                 <td>${birthDate.toLocaleDateString("nl-NL", { day: "2-digit", month: "long" })}</td>
-                <td>${daysLeft === 0 ? "🎂 Vandaag!" : daysLeft}</td>
+                <td>${daysLeft === 0 ? "🎉 Vandaag!" : daysLeft}</td>
             `;
             wrapper.appendChild(row);
         });
