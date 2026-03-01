@@ -1,8 +1,6 @@
 let birthdays = [];
 let translations = {B_Name:"Name", B_Age:"Age", B_Date:"Birthdate", B_Days:"Days"};
-let editingItemId = null; // use ID instead of index for filtered search
-let maxItems = 5;
-let showColumnHeaders = true;
+let editingItemId = null;
 let language = "en";
 
 async function load() {
@@ -26,32 +24,34 @@ function render(){
 
     const tableHeader = document.getElementById("table-header");
     tableHeader.innerHTML = "";
-    if(showColumnHeaders){
-        const headerRow = document.createElement("tr");
-        headerRow.innerHTML = `
-            <th>${translations.B_Name}</th>
-            <th>${translations.B_Age}</th>
-            <th>${translations.B_Date}</th>
-            <th>${translations.B_Days}</th>
-            <th>Edit</th>
-            <th>Actions</th>
-        `;
-        tableHeader.appendChild(headerRow);
-    }
+    const headerRow = document.createElement("tr");
+    headerRow.innerHTML = `
+        <th>${translations.B_Name}</th>
+        <th>${translations.B_Age}</th>
+        <th>${translations.B_Date}</th>
+        <th>${translations.B_Days}</th>
+        <th>Edit</th>
+        <th>Actions</th>
+    `;
+    tableHeader.appendChild(headerRow);
 
+    const today = new Date();
     const sorted = birthdays.slice().sort((a,b) => getDaysLeft(new Date(a.birthdate)) - getDaysLeft(new Date(b.birthdate)));
 
     sorted.forEach((b)=>{
         const birthDate = new Date(b.birthdate);
         if(isNaN(birthDate)) return;
 
-        let age = new Date().getFullYear() - birthDate.getFullYear();
-        if(new Date() < new Date(new Date().getFullYear(), birthDate.getMonth(), birthDate.getDate())) age--;
+        let age = today.getFullYear() - birthDate.getFullYear();
+        if(today < new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate())) age--;
 
         const daysLeft = getDaysLeft(birthDate);
 
         const row = document.createElement("tr");
-        row.dataset.id = b.id || b.name + b.birthdate; // unique ID for filtering
+        row.dataset.id = b.id || b.name+b.birthdate;
+
+        // Highlight today’s birthday
+        if(daysLeft === 0) row.classList.add("birthday-today");
 
         if(editingItemId === row.dataset.id){
             row.innerHTML = `
@@ -121,7 +121,7 @@ function saveEdit(id){
     const birthdate = document.getElementById("edit-birthdate").value;
     if(!name || !birthdate) return;
 
-    birthdays = birthdays.map(b => (b.id || b.name+b.birthdate) === id ? {name,birthdate} : b);
+    birthdays = birthdays.map(b => (b.id||b.name+b.birthdate) === id ? {name,birthdate} : b);
     editingItemId = null;
     save();
     render();
