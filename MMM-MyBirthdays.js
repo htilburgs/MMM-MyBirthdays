@@ -9,22 +9,22 @@ Module.register("MMM-MyBirthdays", {
         this.birthdays = [];
         this.translations = { B_Name: "Name", B_Age: "Age", B_Date: "Birthdate", B_Days: "Days" };
 
-        // Resolve language: module override or MagicMirror language
-        this.lang = this.config.language || (window.config?.language) || "en";
+        // Detect MagicMirror language
+        this.lang = this.config.language || (window.config?.language) || "nl"; // default Nederlands
 
-        // Load birthdays and translations from helper
+        // Vraag helper om vertalingen en verjaardagen
         this.sendSocketNotification("LOAD_BIRTHDAYS", { language: this.lang });
     },
 
     socketNotificationReceived: function(notification, payload) {
         if (notification === "BIRTHDAYS_LOADED") {
             this.birthdays = payload.birthdays || [];
+
+            // Gebruik vertalingen van helper als beschikbaar, anders fallback
             this.translations = payload.translations || this.translations;
 
-            // Update language in case the helper sends it
-            if (!this.config.language) {
-                this.lang = payload.language || this.lang;
-            }
+            // Als module taal null was, gebruik de helpertaal
+            if (!this.config.language) this.lang = payload.language || this.lang;
 
             this.updateDom();
         }
