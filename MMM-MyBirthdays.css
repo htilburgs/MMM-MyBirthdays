@@ -34,7 +34,17 @@
     word-break: break-word;
 }
 
+.highlight {
+    background-color: #00ff00; /* groen voor eerste rij of vandaag */
+    font-weight: bold;
+}
+
+.today {
+    color: #00ff00;
+    font-weight: bold;
+}
+
 .upcoming {
-    color: #ffd700;
+    color: #ffd700; /* goud/geel voor komende 7 dagen */
     font-weight: bold;
 }
