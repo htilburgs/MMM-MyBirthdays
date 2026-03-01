@@ -1,9 +1,9 @@
-const API_BASE = "/mybirthdays/api/birthdays";
+const API_BASE = `${window.location.origin}/mybirthdays/api/birthdays`;
 
 let birthdays = [];
 let filterText = "";
 
-// Init
+// ===== Init =====
 window.addEventListener("load", async () => {
     await load();
 
@@ -29,7 +29,10 @@ window.addEventListener("load", async () => {
 async function load() {
     try {
         const res = await fetch(API_BASE);
-        birthdays = await res.json();
+        if (!res.ok) throw new Error("Kan API niet bereiken");
+        const data = await res.json();
+        console.log("Gelezen data:", data);
+        birthdays = data;
         sortBirthdays();
         render();
     } catch (err) {
@@ -52,20 +55,25 @@ async function save() {
 }
 
 // ===== Helpers =====
-function calculateAge(birthDate, today) {
+function calculateAge(birthDate) {
+    const today = new Date();
     let age = today.getFullYear() - birthDate.getFullYear();
     if (today < new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate())) age--;
     return age;
 }
 
+// UTC-fix: volgende verjaardag berekenen op lokale tijd
 function getNextBirthday(birthDate) {
     const today = new Date();
     const next = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+
+    // verjaardag vandaag
     if (
         next.getFullYear() === today.getFullYear() &&
         next.getMonth() === today.getMonth() &&
         next.getDate() === today.getDate()
     ) return next;
+
     if (next < today) next.setFullYear(today.getFullYear() + 1);
     return next;
 }
@@ -96,6 +104,7 @@ function render() {
 
         const row = document.createElement("tr");
 
+        // Highlight vandaag / komende 7 dagen
         if (daysLeft === 0) row.classList.add("today");
         else if (daysLeft <= 7) row.classList.add("upcoming");
         if (!isMatching) row.classList.add("not-matching");
