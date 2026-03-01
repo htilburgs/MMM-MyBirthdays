@@ -31,17 +31,21 @@ Module.register("MMM-MyBirthdays", {
         wrapper.appendChild(header);
 
         const today = new Date();
+        const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
-        // Helper: volgende verjaardag in lokale tijd
-        function getNextBirthday(birthDate) {
-            const next = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
-            if (next < today) next.setFullYear(today.getFullYear() + 1);
-            return next;
+        // Helper: bereken dagen tot volgende verjaardag
+        function getDaysLeft(birthDate) {
+            let nextBD = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+            if (nextBD < todayMid) nextBD.setFullYear(today.getFullYear() + 1);
+            const diffTime = nextBD - todayMid;
+            return Math.round(diffTime / (1000 * 60 * 60 * 24));
         }
 
         // Sorteer alles op komende verjaardag
         const sorted = this.birthdays.slice().sort((a, b) => {
-            return getNextBirthday(new Date(a.birthdate)) - getNextBirthday(new Date(b.birthdate));
+            const aDate = new Date(a.birthdate);
+            const bDate = new Date(b.birthdate);
+            return getDaysLeft(aDate) - getDaysLeft(bDate);
         });
 
         sorted.forEach((person, index) => {
@@ -51,12 +55,11 @@ Module.register("MMM-MyBirthdays", {
             let age = today.getFullYear() - birthDate.getFullYear();
             if (today < new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate())) age--;
 
-            const nextBD = getNextBirthday(birthDate);
-            const daysLeft = Math.ceil((nextBD - today) / (1000 * 60 * 60 * 24));
+            const daysLeft = getDaysLeft(birthDate);
 
             const row = document.createElement("tr");
 
-            // Eerste rij altijd .upcoming
+            // Eerste rij krijgt altijd .upcoming
             if (index === 0) {
                 row.classList.add("upcoming");
             }
@@ -65,7 +68,7 @@ Module.register("MMM-MyBirthdays", {
                 <td>${person.name}</td>
                 <td>${age}</td>
                 <td>${birthDate.toLocaleDateString("nl-NL", { day: "2-digit", month: "long" })}</td>
-                <td>${daysLeft === 0 ? "🎂 " : daysLeft}</td>
+                <td>${daysLeft === 0 ? "🎂 Vandaag!" : daysLeft}</td>
             `;
             wrapper.appendChild(row);
         });
