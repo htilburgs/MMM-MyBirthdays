@@ -1,139 +1,152 @@
 let birthdays = [];
-let editingIndex = null; // huidige regel die wordt bewerkt
+let translations = {B_Name:"Name", B_Age:"Age", B_Date:"Birthdate", B_Days:"Days"};
+let editingIndex = null;
+let maxItems = 5;
+let showColumnHeaders = true;
+let language = "en";
 
-// Laad de data vanaf backend
 async function load() {
+    // Load birthdays from backend
     const res = await fetch("/api/birthdays");
     birthdays = await res.json();
+
+    // Try to detect language from MagicMirror, fallback to 'en'
+    language = document.documentElement.lang || "en";
+
     render();
 }
 
-// Render de tabel
 function render() {
     const tbody = document.getElementById("list");
     tbody.innerHTML = "";
 
+    const tableHeader = document.getElementById("table-header");
+    tableHeader.innerHTML = "";
+    if (showColumnHeaders) {
+        const headerRow = document.createElement("tr");
+        headerRow.innerHTML = `
+            <th>${translations.B_Name}</th>
+            <th>${translations.B_Age}</th>
+            <th>${translations.B_Date}</th>
+            <th>${translations.B_Days}</th>
+            <th>Edit</th>
+            <th>Actions</th>
+        `;
+        tableHeader.appendChild(headerRow);
+    }
+
     const today = new Date();
+    const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
-    // helper: datum DD-MM-JJJJ
-    function formatDateDDMMYYYY(dateStr) {
-        const date = new Date(dateStr);
-        if (isNaN(date)) return dateStr;
-        const day = String(date.getDate()).padStart(2, "0");
-        const month = String(date.getMonth() + 1).padStart(2, "0");
-        const year = date.getFullYear();
-        return `${day}-${month}-${year}`;
+    function getDaysLeft(birthDate) {
+        let nextBD = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+        if(nextBD < todayMid) nextBD.setFullYear(today.getFullYear()+1);
+        return Math.round((nextBD - todayMid)/(1000*60*60*24));
     }
 
-    // helper: bereken leeftijd
-    function calculateAge(birthDate) {
-        let age = today.getFullYear() - birthDate.getFullYear();
-        const hasHadBirthday =
-            today.getMonth() > birthDate.getMonth() ||
-            (today.getMonth() === birthDate.getMonth() && today.getDate() >= birthDate.getDate());
-        if (!hasHadBirthday) age--;
-        return age;
-    }
+    // Sort by upcoming
+    birthdays.sort((a,b)=> getDaysLeft(new Date(a.birthdate)) - getDaysLeft(new Date(b.birthdate)));
+    const displayed = birthdays.slice(0, maxItems);
 
-    // helper: bereken dagen tot volgende verjaardag
-    function calculateDaysLeft(birthDate) {
-        let nextBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
-        if (nextBirthday < today) nextBirthday.setFullYear(today.getFullYear() + 1);
-        return Math.ceil((nextBirthday - today) / (1000 * 60 * 60 * 24));
-    }
-
-    birthdays.forEach((b, index) => {
+    displayed.forEach((b,index)=>{
         const birthDate = new Date(b.birthdate);
-        if (isNaN(birthDate)) return;
+        if(isNaN(birthDate)) return;
 
-        const age = calculateAge(birthDate);
-        const daysLeft = calculateDaysLeft(birthDate);
+        let age = today.getFullYear() - birthDate.getFullYear();
+        if(today < new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate())) age--;
 
+        const daysLeft = getDaysLeft(birthDate);
         const row = document.createElement("tr");
+        if(index===0) row.classList.add("upcoming");
 
-        if (editingIndex === index) {
-            // Edit-mode: invoervelden + Opslaan/Annuleer
+        if(editingIndex===index){
             row.innerHTML = `
                 <td><input id="edit-name" value="${b.name}"></td>
-                <td><input id="edit-birthdate" type="date" value="${b.birthdate}"></td>
                 <td>${age}</td>
-                <td>${daysLeft}</td>
-                <td><button onclick="saveEdit(${index})">Opslaan</button></td>
-                <td><button onclick="cancelEdit()">Annuleer</button></td>
+                <td><input id="edit-birthdate" type="date" value="${b.birthdate}"></td>
+                <td>${daysLeft===0?"🎂":daysLeft}</td>
+                <td><button onclick="saveEdit(${index})">Save</button></td>
+                <td><button onclick="cancelEdit()">Cancel</button></td>
             `;
         } else {
-            // Normale weergave + Bewerk/Verwijder
             row.innerHTML = `
                 <td>${b.name}</td>
-                <td>${formatDateDDMMYYYY(b.birthdate)}</td>
                 <td>${age}</td>
-                <td>${daysLeft}</td>
-                <td><button onclick="editBirthday(${index})">Bewerk</button></td>
-                <td><button onclick="removeBirthday(${index})">Verwijder</button></td>
+                <td>${birthDate.toLocaleDateString(language, { day:"2-digit", month:"long" })}</td>
+                <td>${daysLeft===0?"🎂":daysLeft}</td>
+                <td><button onclick="editBirthday(${index})">Edit</button></td>
+                <td><button onclick="removeBirthday(${index})">Delete</button></td>
             `;
         }
-
         tbody.appendChild(row);
     });
 }
 
-// Save data naar backend
+// Save birthdays to backend
 async function save() {
     await fetch("/api/birthdays", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method:"POST",
+        headers: { "Content-Type":"application/json" },
         body: JSON.stringify(birthdays)
     });
 }
 
-// Voeg een nieuwe verjaardag toe
+// Add new birthday
 function addBirthday() {
     const nameInput = document.getElementById("name");
     const birthdateInput = document.getElementById("birthdate");
     const name = nameInput.value.trim();
     const birthdate = birthdateInput.value;
+    if(!name || !birthdate) return;
 
-    if (!name || !birthdate) return;
-
-    birthdays.push({ name, birthdate });
+    birthdays.push({name,birthdate});
+    birthdays.sort((a,b)=> new Date(a.birthdate) - new Date(b.birthdate));
     save();
     render();
-
-    // Velden leegmaken na toevoegen
     nameInput.value = "";
     birthdateInput.value = "";
 }
 
-// Verwijder verjaardag
-function removeBirthday(index) {
-    birthdays.splice(index, 1);
+// Remove
+function removeBirthday(index){
+    birthdays.splice(index,1);
     save();
     render();
 }
 
-// Start bewerken
-function editBirthday(index) {
+// Edit
+function editBirthday(index){
     editingIndex = index;
     render();
 }
 
-// Annuleer bewerken
-function cancelEdit() {
+// Cancel edit
+function cancelEdit(){
     editingIndex = null;
     render();
 }
 
-// Opslaan na bewerken
-function saveEdit(index) {
+// Save edit
+function saveEdit(index){
     const name = document.getElementById("edit-name").value.trim();
     const birthdate = document.getElementById("edit-birthdate").value;
-    if (!name || !birthdate) return;
+    if(!name || !birthdate) return;
 
-    birthdays[index] = { name, birthdate };
+    birthdays[index] = {name,birthdate};
     editingIndex = null;
     save();
     render();
 }
 
-// Init
+// Live search/filter
+function filterList(){
+    const search = document.getElementById("search").value.toLowerCase();
+    birthdays.forEach((b,i)=>{
+        const row = document.getElementById("list").children[i];
+        if(!row) return;
+        row.style.display = b.name.toLowerCase().includes(search) ? "" : "none";
+    });
+}
+
+// Initialize
 load();

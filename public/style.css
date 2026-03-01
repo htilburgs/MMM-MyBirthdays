@@ -35,6 +35,11 @@ th {
     font-weight: bold;
 }
 
+tr.upcoming {
+    color: #ffd700;
+    font-weight: bold;
+}
+
 td button {
     font-size: 12px;
     padding: 2px 6px;

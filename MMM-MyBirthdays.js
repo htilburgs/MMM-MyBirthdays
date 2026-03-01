@@ -1,15 +1,29 @@
 Module.register("MMM-MyBirthdays", {
-    defaults: {},
+    defaults: {
+        maxItems: 5,
+        showColumnHeaders: true,
+        language: null // null = use MM language
+    },
 
     start: function () {
         this.birthdays = [];
-        // Initial load
-        this.sendSocketNotification("LOAD_BIRTHDAYS");
+        this.translations = { B_Name: "Name", B_Age: "Age", B_Date: "Birthdate", B_Days: "Days" };
+
+        // Detect MM language
+        let mmLang = this.config.language;
+        if (!mmLang && window.config && window.config.language) {
+            mmLang = window.config.language;
+        }
+        if (!mmLang) mmLang = "en"; // fallback
+
+        this.sendSocketNotification("LOAD_BIRTHDAYS", { language: mmLang });
     },
 
     socketNotificationReceived: function (notification, payload) {
         if (notification === "BIRTHDAYS_LOADED") {
-            this.birthdays = payload || [];
+            this.birthdays = payload.birthdays || [];
+            this.translations = payload.translations || this.translations;
+            this.config.language = payload.language || this.config.language;
             this.updateDom();
         }
     },
@@ -22,51 +36,48 @@ Module.register("MMM-MyBirthdays", {
         const wrapper = document.createElement("table");
         wrapper.className = "birthdays-table";
 
-        const header = document.createElement("tr");
-        header.innerHTML = `
-            <th>Naam</th>
-            <th>Leeftijd</th>
-            <th>Geboortedatum</th>
-            <th>Dagen</th>
-        `;
-        wrapper.appendChild(header);
-
         const today = new Date();
+        const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
-        // Sorteer de verjaardagen op geboortedatum
-        const sortedBirthdays = this.birthdays.slice().sort((a, b) => new Date(a.birthdate) - new Date(b.birthdate));
-
-        // Helper functie dd-mmmm
-        function formatDateDDMMMM(dateStr) {
-            const date = new Date(dateStr);
-            if (isNaN(date)) return dateStr;
-            return date.toLocaleDateString("nl-NL", { day: "2-digit", month: "long" });
+        function getDaysLeft(birthDate) {
+            let nextBD = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+            if (nextBD < todayMid) nextBD.setFullYear(today.getFullYear() + 1);
+            return Math.round((nextBD - todayMid) / (1000 * 60 * 60 * 24));
         }
 
-        sortedBirthdays.forEach(person => {
+        // Sort birthdays by upcoming
+        const sorted = this.birthdays.slice().sort((a, b) => getDaysLeft(new Date(a.birthdate)) - getDaysLeft(new Date(b.birthdate)));
+        const displayed = sorted.slice(0, this.config.maxItems);
+
+        // Column headers
+        if (this.config.showColumnHeaders) {
+            const headerRow = document.createElement("tr");
+            headerRow.innerHTML = `
+                <th>${this.translations.B_Name}</th>
+                <th>${this.translations.B_Age}</th>
+                <th>${this.translations.B_Date}</th>
+                <th>${this.translations.B_Days}</th>
+            `;
+            wrapper.appendChild(headerRow);
+        }
+
+        displayed.forEach((person, index) => {
             const birthDate = new Date(person.birthdate);
             if (isNaN(birthDate)) return;
 
-            // Leeftijd berekenen
             let age = today.getFullYear() - birthDate.getFullYear();
-            const hasHadBirthday =
-                (today.getMonth() > birthDate.getMonth()) ||
-                (today.getMonth() === birthDate.getMonth() &&
-                 today.getDate() >= birthDate.getDate());
-            if (!hasHadBirthday) age--;
+            if (today < new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate())) age--;
 
-            // Dagen tot volgende verjaardag
-            let nextBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
-            if (nextBirthday < today) nextBirthday.setFullYear(today.getFullYear() + 1);
-            const diffTime = nextBirthday - today;
-            const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const daysLeft = getDaysLeft(birthDate);
 
             const row = document.createElement("tr");
+            if (index === 0) row.classList.add("upcoming");
+
             row.innerHTML = `
                 <td>${person.name}</td>
                 <td>${age}</td>
-                <td>${formatDateDDMMMM(person.birthdate)}</td>
-                <td>${daysLeft}</td>
+                <td>${birthDate.toLocaleDateString(this.config.language || "en", { day: "2-digit", month: "long" })}</td>
+                <td>${daysLeft === 0 ? "🎂" : daysLeft}</td>
             `;
             wrapper.appendChild(row);
         });

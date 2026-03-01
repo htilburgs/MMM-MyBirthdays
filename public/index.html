@@ -1,31 +1,23 @@
 <!DOCTYPE html>
-<html lang="nl">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>MyBirthdays Beheer</title>
+    <title>MyBirthdays Management</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<h2>Verjaardagen beheren</h2>
+<h2>Manage Birthdays</h2>
 
 <div>
-    <input id="name" placeholder="Naam">
+    <input id="search" placeholder="Search..." oninput="filterList()">
+    <input id="name" placeholder="Name">
     <input id="birthdate" type="date">
-    <button onclick="addBirthday()">Toevoegen</button>
+    <button onclick="addBirthday()">Add</button>
 </div>
 
 <table>
-    <thead>
-        <tr>
-            <th>Naam</th>
-            <th>Geboortedatum</th>
-            <th>Leeftijd</th>
-            <th>Dagen</th>
-            <th>Bewerk</th>
-            <th>Acties</th>
-        </tr>
-    </thead>
+    <thead id="table-header"></thead>
     <tbody id="list"></tbody>
 </table>
 

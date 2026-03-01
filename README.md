@@ -27,20 +27,14 @@ Go to the MagicMirror/config directory and edit the config.js file.
 Add the module to your modules array in your config.js.
 
 ```
-  {
-        module: "MMM-MyBirthdays",
-        position: "top_right", // pas aan naar wens: top_left, bottom_right, etc.
-        header: "MyBirthdays",
-        disabled: false,
-        config: {
-                  updateInterval: 60 * 60 * 1000,         // update elke 1 uur
-                  fadeSpeed: 1000,                        // fade-in snelheid in ms
-                  jsonFile: "MyBirthdays.json",           // JSON file path
-                  filter: "all",                          // "all" or "upcomingMonth"
-                  maxItems: 5,
-                  showColumnHeaders: true,
-                  showDaysLeft: true,
-                }
-  },
+{
+    module: "MMM-MyBirthdays",
+    position: "top_right", 
+    config: {
+        maxItems: 5,               // Maximum number of birthdays to display
+        showColumnHeaders: true,   // Show table column headers (true) or hide them (false)
+        language: null             // null = automatically use MagicMirror language
+    }
+}
 ```
 
