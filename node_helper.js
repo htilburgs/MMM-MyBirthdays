@@ -35,6 +35,7 @@ module.exports = NodeHelper.create({
                 console.error(`Error parsing translation file ${filePath}:`, e);
             }
         }
+        // fallback English
         const fallbackPath = path.join(this.translationsDir, "en.json");
         if (fs.existsSync(fallbackPath)) {
             try {
@@ -78,7 +79,6 @@ module.exports = NodeHelper.create({
 
     socketNotificationReceived: function (notification, payload) {
         if (notification === "LOAD_BIRTHDAYS") {
-            // ✅ altijd taal uit payload gebruiken
             const lang = (payload && payload.language) || "en";
             const translations = this.loadTranslations(lang);
             this.sendSocketNotification("BIRTHDAYS_LOADED", {
