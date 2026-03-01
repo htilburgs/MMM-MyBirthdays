@@ -27,6 +27,15 @@ module.exports = NodeHelper.create({
         }
     },
 
+    saveBirthdays: function (data) {
+        this.birthdays = data;
+        try {
+            fs.writeFileSync(this.birthdaysFile, JSON.stringify(this.birthdays, null, 2));
+        } catch (e) {
+            console.error("Error saving birthdays JSON:", e);
+        }
+    },
+
     loadTranslations: function (lang) {
         const filePath = path.join(this.translationsDir, `${lang}.json`);
         if (fs.existsSync(filePath)) {
@@ -60,6 +69,16 @@ module.exports = NodeHelper.create({
                 birthdays: this.birthdays,
                 translations: translations,
                 language: lang
+            });
+        }
+
+        if (notification === "SAVE_BIRTHDAYS" && payload && Array.isArray(payload)) {
+            this.saveBirthdays(payload);
+            // broadcast updated data
+            this.sendSocketNotification("BIRTHDAYS_LOADED", {
+                birthdays: this.birthdays,
+                translations: this.loadTranslations(payload.language || "en"),
+                language: payload.language || "en"
             });
         }
     }
