@@ -113,7 +113,7 @@ function render() {
             <td><input class="edit-name" data-index="${index}" value="${b.name}"></td>
             <td><input type="date" class="edit-birthdate" data-index="${index}" value="${b.birthdate}"></td>
             <td>${birthDate.toLocaleDateString("nl-NL", { day: "2-digit", month: "long" })}</td>
-            <td>${daysLeft === 0 ? "🎉 Vandaag!" : daysLeft}</td>
+            <td>${daysLeft === 0 ? "🎂 Vandaag!" : daysLeft}</td>
             <td><button class="remove-btn" data-index="${index}">Verwijder</button></td>
         `;
 
