@@ -44,15 +44,26 @@ Module.register("MMM-MyBirthdays", {
             return next;
         }
 
-        // Sorteer op komende verjaardag
-        const sorted = this.birthdays.slice().sort((a, b) => {
-            return getNextBirthday(new Date(a.birthdate)) - getNextBirthday(new Date(b.birthdate));
+        // Split birthdays in vandaag / rest
+        const todayList = [];
+        const upcomingList = [];
+
+        this.birthdays.forEach(b => {
+            const birthDate = new Date(b.birthdate);
+            if (isNaN(birthDate)) return;
+            const daysLeft = Math.ceil((getNextBirthday(birthDate) - today) / (1000 * 60 * 60 * 24));
+            if (daysLeft === 0) todayList.push(b);
+            else upcomingList.push(b);
         });
+
+        // Sorteer de overige op komende verjaardag
+        upcomingList.sort((a, b) => getNextBirthday(new Date(a.birthdate)) - getNextBirthday(new Date(b.birthdate)));
+
+        // Combineer: vandaag eerst
+        const sorted = [...todayList, ...upcomingList];
 
         sorted.forEach((person, index) => {
             const birthDate = new Date(person.birthdate);
-            if (isNaN(birthDate)) return;
-
             let age = today.getFullYear() - birthDate.getFullYear();
             if (today < new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate())) age--;
 
@@ -62,13 +73,9 @@ Module.register("MMM-MyBirthdays", {
             const row = document.createElement("tr");
 
             // Eerste rij altijd highlight
-            if (index === 0) {
-                row.classList.add("highlight");
-            } else if (daysLeft === 0) {
-                row.classList.add("today");
-            } else if (daysLeft <= 7) {
-                row.classList.add("upcoming");
-            }
+            if (index === 0) row.classList.add("highlight");
+            else if (daysLeft === 0) row.classList.add("today");
+            else if (daysLeft <= 7) row.classList.add("upcoming");
 
             row.innerHTML = `
                 <td>${person.name}</td>
