@@ -1,119 +1,111 @@
 const API_BASE = "/mybirthdays/api/birthdays";
 
 let birthdays = [];
-let editingIndex = null;
 
+// Init: fetch en event listener toevoegen
+window.addEventListener("load", async () => {
+    await load();
+    document.getElementById("add-btn").addEventListener("click", addBirthday);
+});
+
+// Load birthdays van backend
 async function load() {
     const res = await fetch(API_BASE);
     birthdays = await res.json();
     render();
 }
 
+// Save birthdays naar backend
 async function save() {
     await fetch(API_BASE, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(birthdays)
     });
+    render(); // realtime update
 }
 
+// Render de tabel
 function render() {
     const tbody = document.getElementById("list");
     tbody.innerHTML = "";
+
     const today = new Date();
-
-    function formatDateDDMMYYYY(dateStr) {
-        const date = new Date(dateStr);
-        if (isNaN(date)) return dateStr;
-        const day = String(date.getDate()).padStart(2, "0");
-        const month = String(date.getMonth() + 1).padStart(2, "0");
-        const year = date.getFullYear();
-        return `${day}-${month}-${year}`;
-    }
-
-    function calculateAge(birthDate) {
-        let age = today.getFullYear() - birthDate.getFullYear();
-        if (today < new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate())) age--;
-        return age;
-    }
-
-    function calculateDaysLeft(birthDate) {
-        let nextBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
-        if (nextBirthday < today) nextBirthday.setFullYear(today.getFullYear() + 1);
-        return Math.ceil((nextBirthday - today) / (1000 * 60 * 60 * 24));
-    }
 
     birthdays.forEach((b, index) => {
         const birthDate = new Date(b.birthdate);
         if (isNaN(birthDate)) return;
 
-        const age = calculateAge(birthDate);
-        const daysLeft = calculateDaysLeft(birthDate);
-
+        const age = calculateAge(birthDate, today);
+        const daysLeft = calculateDaysLeft(birthDate, today);
         const row = document.createElement("tr");
 
-        if (editingIndex === index) {
-            row.innerHTML = `
-                <td><input id="edit-name" value="${b.name}"></td>
-                <td><input id="edit-birthdate" type="date" value="${b.birthdate}"></td>
-                <td>${age}</td>
-                <td>${daysLeft}</td>
-                <td><button onclick="saveEdit(${index})">Opslaan</button></td>
-                <td><button onclick="cancelEdit()">Annuleer</button></td>
-            `;
-        } else {
-            const daysDisplay = daysLeft === 0 ? "🎉 Vandaag!" : daysLeft;
-            if (daysLeft <= 7) row.classList.add("upcoming");
+        let className = "";
+        if (daysLeft === 0) className = "today";
+        else if (daysLeft <= 7) className = "upcoming";
 
-            row.innerHTML = `
-                <td>${b.name}</td>
-                <td>${formatDateDDMMYYYY(b.birthdate)}</td>
-                <td>${age}</td>
-                <td>${daysDisplay}</td>
-                <td><button onclick="editBirthday(${index})">Bewerk</button></td>
-                <td><button onclick="removeBirthday(${index})">Verwijder</button></td>
-            `;
-        }
+        row.className = className;
 
+        row.innerHTML = `
+            <td><input class="edit-name" data-index="${index}" value="${b.name}"></td>
+            <td><input type="date" class="edit-birthdate" data-index="${index}" value="${b.birthdate}"></td>
+            <td>${age}</td>
+            <td>${daysLeft === 0 ? "🎉 Vandaag!" : daysLeft}</td>
+            <td>
+                <button class="remove-btn" data-index="${index}">Verwijder</button>
+            </td>
+        `;
         tbody.appendChild(row);
+    });
+
+    // Event listeners voor inline edits
+    document.querySelectorAll(".edit-name").forEach(input => {
+        input.addEventListener("change", e => {
+            const idx = e.target.dataset.index;
+            birthdays[idx].name = e.target.value.trim();
+            save();
+        });
+    });
+
+    document.querySelectorAll(".edit-birthdate").forEach(input => {
+        input.addEventListener("change", e => {
+            const idx = e.target.dataset.index;
+            birthdays[idx].birthdate = e.target.value;
+            save();
+        });
+    });
+
+    document.querySelectorAll(".remove-btn").forEach(btn => {
+        btn.addEventListener("click", e => {
+            const idx = e.target.dataset.index;
+            birthdays.splice(idx, 1);
+            save();
+        });
     });
 }
 
+// Helpers
+function calculateAge(birthDate, today) {
+    let age = today.getFullYear() - birthDate.getFullYear();
+    if (today < new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate())) age--;
+    return age;
+}
+
+function calculateDaysLeft(birthDate, today) {
+    let nextBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+    if (nextBirthday < today) nextBirthday.setFullYear(today.getFullYear() + 1);
+    return Math.ceil((nextBirthday - today) / (1000 * 60 * 60 * 24));
+}
+
+// Toevoegen
 function addBirthday() {
-    const name = document.getElementById("name").value.trim();
-    const birthdate = document.getElementById("birthdate").value;
+    const nameInput = document.getElementById("name");
+    const birthdateInput = document.getElementById("birthdate");
+    const name = nameInput.value.trim();
+    const birthdate = birthdateInput.value;
     if (!name || !birthdate) return;
     birthdays.push({ name, birthdate });
+    nameInput.value = "";
+    birthdateInput.value = "";
     save();
-    render();
-    document.getElementById("name").value = "";
-    document.getElementById("birthdate").value = "";
 }
-
-function removeBirthday(index) {
-    birthdays.splice(index, 1);
-    save();
-    render();
-}
-
-function editBirthday(index) {
-    editingIndex = index;
-    render();
-}
-
-function cancelEdit() {
-    editingIndex = null;
-    render();
-}
-
-function saveEdit(index) {
-    const name = document.getElementById("edit-name").value.trim();
-    const birthdate = document.getElementById("edit-birthdate").value;
-    if (!name || !birthdate) return;
-    birthdays[index] = { name, birthdate };
-    editingIndex = null;
-    save();
-    render();
-}
-
-window.addEventListener("load", load);
