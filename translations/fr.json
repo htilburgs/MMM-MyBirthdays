@@ -1,6 +1,7 @@
 {
-  "B_Name": "Nom",
-  "B_Age": "Âge",
-  "B_Date": "Anniversaire",
-  "B_Days": "Jours"
+    "LOADING": "Chargement des anniversaires...",
+    "NAME": "Nom",
+    "AGE": "Âge",
+    "BIRTHDATE": "Anniversaire",
+    "DAYS_TO_BIRTHDAY": "Jours"
 }
