@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>My Birthdays</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>My Birthdays</h1>
+    <div id="form-container">
+        <form id="birthday-form">
+            <input type="hidden" id="index" value="">
+            <input type="text" id="name" placeholder="Name" required>
+            <input type="date" id="date" required>
+            <button type="submit">Save</button>
+            <button type="button" id="cancel">Cancel</button>
+        </form>
+    </div>
+    <div id="list-container">
+        <table id="birthdays-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Birthdate</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+<script src="script.js"></script>
+</body>
+</html>
