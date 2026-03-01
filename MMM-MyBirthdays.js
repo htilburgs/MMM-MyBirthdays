@@ -68,7 +68,7 @@ Module.register("MMM-MyBirthdays", {
                 <td>${person.name}</td>
                 <td>${age}</td>
                 <td>${birthDate.toLocaleDateString("nl-NL", { day: "2-digit", month: "long" })}</td>
-                <td>${daysLeft === 0 ? "🎂 Vandaag!" : daysLeft}</td>
+                <td>${daysLeft === 0 ? "🎂 " : daysLeft}</td>
             `;
             wrapper.appendChild(row);
         });
