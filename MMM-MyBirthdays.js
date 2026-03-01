@@ -72,16 +72,24 @@ Module.register("MMM-MyBirthdays", {
 
             const row = document.createElement("tr");
 
-            // Eerste rij altijd highlight
-            if (index === 0) row.classList.add("highlight");
-            else if (daysLeft === 0) row.classList.add("today");
-            else if (daysLeft <= 7) row.classList.add("upcoming");
+            // Highlight vandaag altijd
+            if (daysLeft === 0) {
+                row.classList.add("highlight");
+            }
+            // Als niemand vandaag, eerste rij highlight
+            else if (index === 0) {
+                row.classList.add("highlight");
+            }
+            // Komende 7 dagen
+            else if (daysLeft <= 7) {
+                row.classList.add("upcoming");
+            }
 
             row.innerHTML = `
                 <td>${person.name}</td>
                 <td>${age}</td>
                 <td>${birthDate.toLocaleDateString("nl-NL", { day: "2-digit", month: "long" })}</td>
-                <td>${daysLeft === 0 ? "🎉 Vandaag!" : daysLeft}</td>
+                <td>${daysLeft === 0 ? "🎂 Vandaag!" : daysLeft}</td>
             `;
             wrapper.appendChild(row);
         });
