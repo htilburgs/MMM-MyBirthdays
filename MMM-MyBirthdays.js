@@ -9,16 +9,23 @@ Module.register("MMM-MyBirthdays", {
         this.birthdays = [];
         this.translations = { B_Name: "Name", B_Age: "Age", B_Date: "Birthdate", B_Days: "Days" };
 
-        // Detect MagicMirror language
-        let mmLang = this.config.language || (window.config?.language) || "en";
-        this.sendSocketNotification("LOAD_BIRTHDAYS", { language: mmLang });
+        // Resolve language: module override or MagicMirror language
+        this.lang = this.config.language || (window.config?.language) || "en";
+
+        // Load birthdays and translations from helper
+        this.sendSocketNotification("LOAD_BIRTHDAYS", { language: this.lang });
     },
 
     socketNotificationReceived: function(notification, payload) {
         if (notification === "BIRTHDAYS_LOADED") {
             this.birthdays = payload.birthdays || [];
             this.translations = payload.translations || this.translations;
-            this.config.language = payload.language || this.config.language;
+
+            // Update language in case the helper sends it
+            if (!this.config.language) {
+                this.lang = payload.language || this.lang;
+            }
+
             this.updateDom();
         }
     },
@@ -74,7 +81,7 @@ Module.register("MMM-MyBirthdays", {
             row.innerHTML = `
                 <td>${person.name}</td>
                 <td>${age}</td>
-                <td>${birthDate.toLocaleDateString(this.config.language || "en", { day: "2-digit", month: "long" })}</td>
+                <td>${birthDate.toLocaleDateString(this.lang, { day: "2-digit", month: "long" })}</td>
                 <td>${daysLeft === 0 ? "🎂" : daysLeft}</td>
             `;
             wrapper.appendChild(row);
