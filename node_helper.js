@@ -9,7 +9,7 @@ module.exports = NodeHelper.create({
         this.filePath = path.join(__dirname, "MyBirthdays.json");
         this.data = [];
         this.loadData();
-        this.startWebServer();
+        this.registerExpressRoutes();
     },
 
     loadData: function () {
@@ -26,15 +26,20 @@ module.exports = NodeHelper.create({
         }
     },
 
-    startWebServer: function () {
-        const app = express();
+    // Koppel routes aan bestaande MagicMirror Express server
+    registerExpressRoutes: function () {
+        const app = this.expressApp || express(); // gebruik MagicMirror expressApp als beschikbaar
         app.use(express.json());
-        app.use(express.static(path.join(__dirname, "public")));
 
+        // Statics uit /public
+        app.use("/mybirthdays", express.static(path.join(__dirname, "public")));
+
+        // Homepage
         app.get("/mybirthdays", (req, res) => {
             res.sendFile(path.join(__dirname, "public", "index.html"));
         });
 
+        // API routes
         app.get("/mybirthdays/api/birthdays", (req, res) => {
             res.json(this.data);
         });
@@ -46,10 +51,7 @@ module.exports = NodeHelper.create({
             res.json({ status: "ok" });
         });
 
-        const port = 3123;
-        app.listen(port, () => {
-            console.log(`MMM-MyBirthdays webserver op poort ${port}`);
-        });
+        console.log("MMM-MyBirthdays routes geregistreerd op bestaande server (8080)");
     },
 
     socketNotificationReceived: function (notification) {
