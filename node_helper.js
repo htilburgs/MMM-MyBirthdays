@@ -17,7 +17,9 @@ module.exports = NodeHelper.create({
     loadBirthdays: function () {
         try {
             if (fs.existsSync(this.birthdaysFile)) {
-                this.birthdays = JSON.parse(fs.readFileSync(this.birthdaysFile));
+                this.birthdays = JSON.parse(
+                    fs.readFileSync(this.birthdaysFile, "utf8")
+                );
             } else {
                 fs.writeFileSync(this.birthdaysFile, JSON.stringify([], null, 2));
                 this.birthdays = [];
@@ -28,11 +30,11 @@ module.exports = NodeHelper.create({
         }
     },
 
-    loadTranslations: function(lang) {
+    loadTranslations: function (lang) {
         const filePath = path.join(this.translationsDir, `${lang}.json`);
         if (fs.existsSync(filePath)) {
             try {
-                return JSON.parse(fs.readFileSync(filePath));
+                return JSON.parse(fs.readFileSync(filePath, "utf8"));
             } catch (e) {
                 console.error(`Error parsing translation file ${filePath}:`, e);
             }
@@ -42,21 +44,48 @@ module.exports = NodeHelper.create({
         const fallbackPath = path.join(this.translationsDir, "en.json");
         if (fs.existsSync(fallbackPath)) {
             try {
-                return JSON.parse(fs.readFileSync(fallbackPath));
+                return JSON.parse(fs.readFileSync(fallbackPath, "utf8"));
             } catch (e) {
                 console.error("Error parsing English fallback translation:", e);
             }
         }
 
-        return { B_Name:"Name", B_Age:"Age", B_Date:"Birthdate", B_Days:"Days" };
+        return { B_Name: "Name", B_Age: "Age", B_Date: "Birthdate", B_Days: "Days" };
     },
 
-    registerRoutes: function() {
-        const app = this.expressApp; // MagicMirror injecteert deze
+    // ✅ NEW: sort by upcoming birthday
+    getSortedBirthdays: function (list) {
+        const today = new Date();
+
+        const getNextBirthday = (dateStr) => {
+            if (!dateStr) return new Date(8640000000000000);
+
+            const parts = dateStr.split("-");
+            if (parts.length !== 3) return new Date(8640000000000000);
+
+            const [, month, day] = parts.map(Number);
+            const next = new Date(today.getFullYear(), month - 1, day);
+
+            if (next < today) {
+                next.setFullYear(today.getFullYear() + 1);
+            }
+            return next;
+        };
+
+        return [...list].sort((a, b) => {
+            return getNextBirthday(a.date) - getNextBirthday(b.date);
+        });
+    },
+
+    registerRoutes: function () {
+        const app = this.expressApp;
         if (!app) {
             console.error("Express app not found! Cannot register /mybirthdays route.");
             return;
         }
+
+        // ✅ FIX: enable JSON body parsing
+        app.use(require("express").json());
 
         // Serve static files
         app.use("/mybirthdays", require("express").static(path.join(__dirname, "public")));
@@ -67,25 +96,39 @@ module.exports = NodeHelper.create({
         });
 
         // API
-        app.get("/api/birthdays", (req, res) => res.json(this.birthdays));
+        app.get("/api/birthdays", (req, res) => {
+            res.json(this.getSortedBirthdays(this.birthdays));
+        });
 
+        // ✅ FIX: validate POST body
         app.post("/api/birthdays", (req, res) => {
-            this.birthdays = req.body || [];
-            fs.writeFileSync(this.birthdaysFile, JSON.stringify(this.birthdays, null, 2));
-            this.sendSocketNotification("BIRTHDAYS_LOADED", this.birthdays);
+            if (!Array.isArray(req.body)) {
+                return res.status(400).json({ status: "error", message: "Invalid data" });
+            }
+
+            this.birthdays = req.body;
+            fs.writeFileSync(
+                this.birthdaysFile,
+                JSON.stringify(this.birthdays, null, 2)
+            );
+
+            this.sendSocketNotification("BIRTHDAYS_LOADED", {
+                birthdays: this.getSortedBirthdays(this.birthdays)
+            });
+
             res.json({ status: "ok" });
         });
 
         console.log("MMM-MyBirthdays routes registered at /mybirthdays");
     },
 
-    socketNotificationReceived: function(notification, payload) {
+    socketNotificationReceived: function (notification, payload) {
         if (notification === "LOAD_BIRTHDAYS") {
             const lang = payload && payload.language ? payload.language : "en";
             const translations = this.loadTranslations(lang);
 
             this.sendSocketNotification("BIRTHDAYS_LOADED", {
-                birthdays: this.birthdays,
+                birthdays: this.getSortedBirthdays(this.birthdays),
                 translations: translations
             });
         }
