@@ -2,28 +2,26 @@ Module.register("MMM-MyBirthdays", {
     defaults: {
         maxItems: 5,
         showColumnHeaders: true,
-        language: null // null = use MagicMirror language
+        language: null // null = gebruik MM-taal
     },
 
     start: function() {
         this.birthdays = [];
         this.translations = { B_Name: "Name", B_Age: "Age", B_Date: "Birthdate", B_Days: "Days" };
 
-        // Detect MagicMirror language
-        this.lang = this.config.language || (window.config?.language) || "nl"; // default Nederlands
+        // Gebruik module taal als ingesteld, anders MM taal, anders fallback naar Engels
+        this.lang = this.config.language || (window.config?.language) || "en";
 
-        // Vraag helper om vertalingen en verjaardagen
+        // Vraag helper om verjaardagen en vertalingen
         this.sendSocketNotification("LOAD_BIRTHDAYS", { language: this.lang });
     },
 
     socketNotificationReceived: function(notification, payload) {
         if (notification === "BIRTHDAYS_LOADED") {
             this.birthdays = payload.birthdays || [];
-
-            // Gebruik vertalingen van helper als beschikbaar, anders fallback
             this.translations = payload.translations || this.translations;
 
-            // Als module taal null was, gebruik de helpertaal
+            // Alleen update de taal als module taal null is (dus overnemen van helper/MM)
             if (!this.config.language) this.lang = payload.language || this.lang;
 
             this.updateDom();
@@ -47,13 +45,13 @@ Module.register("MMM-MyBirthdays", {
             return Math.round((nextBD - todayMid) / (1000 * 60 * 60 * 24));
         }
 
-        // Sort birthdays by upcoming
+        // Sorteer verjaardagen op aankomend
         const sorted = this.birthdays.slice().sort(
             (a, b) => getDaysLeft(new Date(a.birthdate)) - getDaysLeft(new Date(b.birthdate))
         );
         const displayed = sorted.slice(0, this.config.maxItems);
 
-        // Column headers
+        // Kolomkoppen
         if (this.config.showColumnHeaders) {
             const headerRow = document.createElement("tr");
             headerRow.innerHTML = `
@@ -65,7 +63,7 @@ Module.register("MMM-MyBirthdays", {
             wrapper.appendChild(headerRow);
         }
 
-        // Render birthdays
+        // Render verjaardagen
         displayed.forEach((person, index) => {
             const birthDate = new Date(person.birthdate);
             if (isNaN(birthDate)) return;
