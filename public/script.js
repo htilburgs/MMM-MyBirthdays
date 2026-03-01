@@ -1,44 +1,54 @@
 let birthdays = [];
 let translations = {B_Name:"Name", B_Age:"Age", B_Date:"Birthdate", B_Days:"Days"};
-let editingItemId = null;
+let editingIndex = null;
+let maxItems = 5;
+let showColumnHeaders = true;
 let language = "en";
 
 async function load() {
+    // Load birthdays from backend
     const res = await fetch("/api/birthdays");
     birthdays = await res.json();
+
+    // Try to detect language from MagicMirror, fallback to 'en'
     language = document.documentElement.lang || "en";
+
     render();
 }
 
-function getDaysLeft(birthDate){
-    const today = new Date();
-    const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    let nextBD = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
-    if(nextBD < todayMid) nextBD.setFullYear(today.getFullYear()+1);
-    return Math.round((nextBD - todayMid)/(1000*60*60*24));
-}
-
-function render(){
+function render() {
     const tbody = document.getElementById("list");
     tbody.innerHTML = "";
 
     const tableHeader = document.getElementById("table-header");
     tableHeader.innerHTML = "";
-    const headerRow = document.createElement("tr");
-    headerRow.innerHTML = `
-        <th>${translations.B_Name}</th>
-        <th>${translations.B_Age}</th>
-        <th>${translations.B_Date}</th>
-        <th>${translations.B_Days}</th>
-        <th>Edit</th>
-        <th>Actions</th>
-    `;
-    tableHeader.appendChild(headerRow);
+    if (showColumnHeaders) {
+        const headerRow = document.createElement("tr");
+        headerRow.innerHTML = `
+            <th>${translations.B_Name}</th>
+            <th>${translations.B_Age}</th>
+            <th>${translations.B_Date}</th>
+            <th>${translations.B_Days}</th>
+            <th>Edit</th>
+            <th>Actions</th>
+        `;
+        tableHeader.appendChild(headerRow);
+    }
 
     const today = new Date();
-    const sorted = birthdays.slice().sort((a,b) => getDaysLeft(new Date(a.birthdate)) - getDaysLeft(new Date(b.birthdate)));
+    const todayMid = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
-    sorted.forEach((b)=>{
+    function getDaysLeft(birthDate) {
+        let nextBD = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+        if(nextBD < todayMid) nextBD.setFullYear(today.getFullYear()+1);
+        return Math.round((nextBD - todayMid)/(1000*60*60*24));
+    }
+
+    // Sort by upcoming
+    birthdays.sort((a,b)=> getDaysLeft(new Date(a.birthdate)) - getDaysLeft(new Date(b.birthdate)));
+    const displayed = birthdays.slice(0, maxItems);
+
+    displayed.forEach((b,index)=>{
         const birthDate = new Date(b.birthdate);
         if(isNaN(birthDate)) return;
 
@@ -46,95 +56,97 @@ function render(){
         if(today < new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate())) age--;
 
         const daysLeft = getDaysLeft(birthDate);
-
         const row = document.createElement("tr");
-        row.dataset.id = b.id || b.name+b.birthdate;
+        if(index===0) row.classList.add("upcoming");
 
-        // Highlight today’s birthday
-        if(daysLeft === 0) row.classList.add("birthday-today");
-
-        if(editingItemId === row.dataset.id){
+        if(editingIndex===index){
             row.innerHTML = `
                 <td><input id="edit-name" value="${b.name}"></td>
                 <td>${age}</td>
                 <td><input id="edit-birthdate" type="date" value="${b.birthdate}"></td>
                 <td>${daysLeft===0?"🎂":daysLeft}</td>
-                <td><button onclick="saveEdit('${row.dataset.id}')">Save</button></td>
+                <td><button onclick="saveEdit(${index})">Save</button></td>
                 <td><button onclick="cancelEdit()">Cancel</button></td>
             `;
         } else {
             row.innerHTML = `
                 <td>${b.name}</td>
                 <td>${age}</td>
-                <td>${birthDate.toLocaleDateString(language, { day:"2-digit", month:"long", year:"numeric" })}</td>
+                <td>${birthDate.toLocaleDateString(language, { day:"2-digit", month:"long" })}</td>
                 <td>${daysLeft===0?"🎂":daysLeft}</td>
-                <td><button onclick="editBirthday('${row.dataset.id}')">Edit</button></td>
-                <td><button onclick="removeBirthday('${row.dataset.id}')">Delete</button></td>
+                <td><button onclick="editBirthday(${index})">Edit</button></td>
+                <td><button onclick="removeBirthday(${index})">Delete</button></td>
             `;
         }
         tbody.appendChild(row);
     });
 }
 
-async function save(){
-    try{
-        await fetch("/api/birthdays", {
-            method:"POST",
-            headers:{ "Content-Type":"application/json" },
-            body: JSON.stringify(birthdays)
-        });
-    } catch(e){ console.error("Error saving birthdays:", e); }
+// Save birthdays to backend
+async function save() {
+    await fetch("/api/birthdays", {
+        method:"POST",
+        headers: { "Content-Type":"application/json" },
+        body: JSON.stringify(birthdays)
+    });
 }
 
-function addBirthday(){
+// Add new birthday
+function addBirthday() {
     const nameInput = document.getElementById("name");
     const birthdateInput = document.getElementById("birthdate");
     const name = nameInput.value.trim();
     const birthdate = birthdateInput.value;
     if(!name || !birthdate) return;
 
-    birthdays.push({name, birthdate});
+    birthdays.push({name,birthdate});
+    birthdays.sort((a,b)=> new Date(a.birthdate) - new Date(b.birthdate));
     save();
-    load();
+    render();
     nameInput.value = "";
     birthdateInput.value = "";
 }
 
-function removeBirthday(id){
-    birthdays = birthdays.filter(b => (b.id || b.name+b.birthdate) !== id);
+// Remove
+function removeBirthday(index){
+    birthdays.splice(index,1);
     save();
     render();
 }
 
-function editBirthday(id){
-    editingItemId = id;
+// Edit
+function editBirthday(index){
+    editingIndex = index;
     render();
 }
 
+// Cancel edit
 function cancelEdit(){
-    editingItemId = null;
+    editingIndex = null;
     render();
 }
 
-function saveEdit(id){
+// Save edit
+function saveEdit(index){
     const name = document.getElementById("edit-name").value.trim();
     const birthdate = document.getElementById("edit-birthdate").value;
     if(!name || !birthdate) return;
 
-    birthdays = birthdays.map(b => (b.id||b.name+b.birthdate) === id ? {name,birthdate} : b);
-    editingItemId = null;
+    birthdays[index] = {name,birthdate};
+    editingIndex = null;
     save();
     render();
 }
 
+// Live search/filter
 function filterList(){
     const search = document.getElementById("search").value.toLowerCase();
-    document.querySelectorAll("#list tr").forEach(row=>{
-        if(row.dataset.id){
-            const b = birthdays.find(b => (b.id||b.name+b.birthdate) === row.dataset.id);
-            row.style.display = b.name.toLowerCase().includes(search) ? "" : "none";
-        }
+    birthdays.forEach((b,i)=>{
+        const row = document.getElementById("list").children[i];
+        if(!row) return;
+        row.style.display = b.name.toLowerCase().includes(search) ? "" : "none";
     });
 }
 
+// Initialize
 load();
