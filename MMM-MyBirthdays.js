@@ -44,26 +44,15 @@ Module.register("MMM-MyBirthdays", {
             return next;
         }
 
-        // Split birthdays in vandaag / rest
-        const todayList = [];
-        const upcomingList = [];
-
-        this.birthdays.forEach(b => {
-            const birthDate = new Date(b.birthdate);
-            if (isNaN(birthDate)) return;
-            const daysLeft = Math.ceil((getNextBirthday(birthDate) - today) / (1000 * 60 * 60 * 24));
-            if (daysLeft === 0) todayList.push(b);
-            else upcomingList.push(b);
+        // Sorteer alles op komende verjaardag
+        const sorted = this.birthdays.slice().sort((a, b) => {
+            return getNextBirthday(new Date(a.birthdate)) - getNextBirthday(new Date(b.birthdate));
         });
-
-        // Sorteer de overige op komende verjaardag
-        upcomingList.sort((a, b) => getNextBirthday(new Date(a.birthdate)) - getNextBirthday(new Date(b.birthdate)));
-
-        // Combineer: vandaag eerst
-        const sorted = [...todayList, ...upcomingList];
 
         sorted.forEach((person, index) => {
             const birthDate = new Date(person.birthdate);
+            if (isNaN(birthDate)) return;
+
             let age = today.getFullYear() - birthDate.getFullYear();
             if (today < new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate())) age--;
 
@@ -72,15 +61,11 @@ Module.register("MMM-MyBirthdays", {
 
             const row = document.createElement("tr");
 
-            // Highlight vandaag altijd
-            if (daysLeft === 0) {
+            // Alleen de eerste rij krijgt highlight
+            if (index === 0) {
                 row.classList.add("highlight");
             }
-            // Als niemand vandaag, eerste rij highlight
-            else if (index === 0) {
-                row.classList.add("highlight");
-            }
-            // Komende 7 dagen
+            // Alle overige rijen binnen 7 dagen krijgen upcoming styling
             else if (daysLeft <= 7) {
                 row.classList.add("upcoming");
             }
