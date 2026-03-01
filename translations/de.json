@@ -1,6 +1,7 @@
 {
-  "B_Name": "Name",
-  "B_Age": "Alter",
-  "B_Date": "Geburtsdatum",
-  "B_Days": "Tage"
+    "LOADING": "Geburtstage werden geladen...",
+    "NAME": "Name",
+    "AGE": "Alter",
+    "BIRTHDATE": "Geburtsdatum",
+    "DAYS_TO_BIRTHDAY": "Tage"
 }
