@@ -35,11 +35,6 @@ Module.register("MMM-MyBirthdays", {
         // Helper: volgende verjaardag in lokale tijd
         function getNextBirthday(birthDate) {
             const next = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
-            if (
-                next.getFullYear() === today.getFullYear() &&
-                next.getMonth() === today.getMonth() &&
-                next.getDate() === today.getDate()
-            ) return next; // vandaag
             if (next < today) next.setFullYear(today.getFullYear() + 1);
             return next;
         }
@@ -61,12 +56,8 @@ Module.register("MMM-MyBirthdays", {
 
             const row = document.createElement("tr");
 
-            // Alleen de eerste rij krijgt highlight
+            // Eerste rij altijd .upcoming
             if (index === 0) {
-                row.classList.add("highlight");
-            }
-            // Alle overige rijen binnen 7 dagen krijgen upcoming styling
-            else if (daysLeft <= 7) {
                 row.classList.add("upcoming");
             }
 
@@ -74,7 +65,7 @@ Module.register("MMM-MyBirthdays", {
                 <td>${person.name}</td>
                 <td>${age}</td>
                 <td>${birthDate.toLocaleDateString("nl-NL", { day: "2-digit", month: "long" })}</td>
-                <td>${daysLeft === 0 ? "🎂 Vandaag!" : daysLeft}</td>
+                <td>${daysLeft === 0 ? "🎂 " : daysLeft}</td>
             `;
             wrapper.appendChild(row);
         });
