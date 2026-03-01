@@ -9,8 +9,13 @@ Module.register("MMM-MyBirthdays", {
         this.birthdays = [];
         this.translations = { B_Name: "Name", B_Age: "Age", B_Date: "Birthdate", B_Days: "Days" };
 
-        // Detect MM language
-        const mmLang = this.config.language || (this.config.languageFallback || (window && window.config ? window.config.language : "en"));
+        // Detect MM language if null
+        let mmLang = this.config.language;
+        if (!mmLang && window.config && window.config.language) {
+            mmLang = window.config.language;
+        }
+        if (!mmLang) mmLang = "en"; // fallback
+
         this.sendSocketNotification("LOAD_BIRTHDAYS", { language: mmLang });
     },
 
@@ -44,6 +49,7 @@ Module.register("MMM-MyBirthdays", {
         const sorted = this.birthdays.slice().sort((a, b) => getDaysLeft(new Date(a.birthdate)) - getDaysLeft(new Date(b.birthdate)));
         const displayed = sorted.slice(0, this.config.maxItems);
 
+        // Column headers
         if (this.config.showColumnHeaders) {
             const headerRow = document.createElement("tr");
             headerRow.innerHTML = `
@@ -55,6 +61,7 @@ Module.register("MMM-MyBirthdays", {
             wrapper.appendChild(headerRow);
         }
 
+        // Table rows
         displayed.forEach((person, index) => {
             const birthDate = new Date(person.birthdate);
             if (isNaN(birthDate)) return;
