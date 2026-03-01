@@ -53,3 +53,8 @@ input[type="date"] {
     color: #00ff00;
     font-weight: bold;
 }
+
+.not-matching {
+    opacity: 0.3;      /* lichte transparantie voor niet-overeenkomende rijen */
+    transition: opacity 0.2s;
+}
