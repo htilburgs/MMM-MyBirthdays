@@ -2,19 +2,23 @@ Module.register("MMM-MyBirthdays", {
     defaults: {
         maxItems: 5,
         showColumnHeaders: true,
-        language: "en"
+        language: null // null = use MM language
     },
 
     start: function () {
         this.birthdays = [];
-        this.translations = { B_Name:"Name", B_Age:"Age", B_Date:"Birthdate", B_Days:"Days" };
-        this.sendSocketNotification("LOAD_BIRTHDAYS", { language: this.config.language });
+        this.translations = { B_Name: "Name", B_Age: "Age", B_Date: "Birthdate", B_Days: "Days" };
+
+        // Detect MM language
+        const mmLang = this.config.language || (this.config.languageFallback || (window && window.config ? window.config.language : "en"));
+        this.sendSocketNotification("LOAD_BIRTHDAYS", { language: mmLang });
     },
 
-    socketNotificationReceived: function(notification, payload) {
+    socketNotificationReceived: function (notification, payload) {
         if (notification === "BIRTHDAYS_LOADED") {
             this.birthdays = payload.birthdays || [];
             this.translations = payload.translations || this.translations;
+            this.config.language = payload.language || this.config.language;
             this.updateDom();
         }
     },
@@ -33,11 +37,11 @@ Module.register("MMM-MyBirthdays", {
         function getDaysLeft(birthDate) {
             let nextBD = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
             if (nextBD < todayMid) nextBD.setFullYear(today.getFullYear() + 1);
-            const diffTime = nextBD - todayMid;
-            return Math.round(diffTime / (1000 * 60 * 60 * 24));
+            return Math.round((nextBD - todayMid) / (1000 * 60 * 60 * 24));
         }
 
-        const sorted = this.birthdays.slice().sort((a,b)=> getDaysLeft(new Date(a.birthdate)) - getDaysLeft(new Date(b.birthdate)));
+        // Sort birthdays by upcoming date
+        const sorted = this.birthdays.slice().sort((a, b) => getDaysLeft(new Date(a.birthdate)) - getDaysLeft(new Date(b.birthdate)));
         const displayed = sorted.slice(0, this.config.maxItems);
 
         if (this.config.showColumnHeaders) {
@@ -51,22 +55,24 @@ Module.register("MMM-MyBirthdays", {
             wrapper.appendChild(headerRow);
         }
 
-        displayed.forEach((person,index)=>{
+        displayed.forEach((person, index) => {
             const birthDate = new Date(person.birthdate);
-            if(isNaN(birthDate)) return;
+            if (isNaN(birthDate)) return;
 
             let age = today.getFullYear() - birthDate.getFullYear();
-            if(today < new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate())) age--;
+            if (today < new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate())) age--;
 
             const daysLeft = getDaysLeft(birthDate);
             const row = document.createElement("tr");
-            if(index === 0) row.classList.add("upcoming");
+
+            // Always highlight first row
+            if (index === 0) row.classList.add("upcoming");
 
             row.innerHTML = `
                 <td>${person.name}</td>
                 <td>${age}</td>
-                <td>${birthDate.toLocaleDateString(this.config.language, { day:"2-digit", month:"long" })}</td>
-                <td>${daysLeft===0?"🎂":daysLeft}</td>
+                <td>${birthDate.toLocaleDateString(this.config.language || "en", { day: "2-digit", month: "long" })}</td>
+                <td>${daysLeft === 0 ? "🎂" : daysLeft}</td>
             `;
             wrapper.appendChild(row);
         });
