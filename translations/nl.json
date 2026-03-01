@@ -1,6 +1,7 @@
 {
-  "B_Name": "Naam",
-  "B_Age": "Leeftijd",
-  "B_Date": "Geboortedatum",
-  "B_Days": "Dagen"
+    "LOADING": "Verjaardagen laden...",
+    "NAME": "Naam",
+    "AGE": "Leeftijd",
+    "BIRTHDATE": "Geboortedatum",
+    "DAYS_TO_BIRTHDAY": "Dagen"
 }
