@@ -1,39 +1,21 @@
 let birthdays = [];
-let translations = {};
-let language = "en";
+let translations = {B_Name:"Name", B_Age:"Age", B_Date:"Birthdate", B_Days:"Days"};
 let editingIndex = null;
 let maxItems = 5;
 let showColumnHeaders = true;
+let language = "en";
 
-// Load birthdays and translations from backend
 async function load() {
+    // Load birthdays from backend
     const res = await fetch("/api/birthdays");
     birthdays = await res.json();
 
-    // Try to get language and translations from backend
-    try {
-        const socketRes = await fetch("/api/birthdays"); // dummy, real socket would provide translations
-        // here we simulate backend providing translations
-        // in real MMM, the translations come via BIRTHDAYS_LOADED
-        translations = {
-            B_Name: "Name",
-            B_Age: "Age",
-            B_Date: "Birthdate",
-            B_Days: "Days"
-        };
-    } catch {
-        translations = {
-            B_Name: "Name",
-            B_Age: "Age",
-            B_Date: "Birthdate",
-            B_Days: "Days"
-        };
-    }
+    // Try to detect language from MagicMirror, fallback to 'en'
+    language = document.documentElement.lang || "en";
 
     render();
 }
 
-// Render table with translations and language
 function render() {
     const tbody = document.getElementById("list");
     tbody.innerHTML = "";
@@ -62,6 +44,7 @@ function render() {
         return Math.round((nextBD - todayMid)/(1000*60*60*24));
     }
 
+    // Sort by upcoming
     birthdays.sort((a,b)=> getDaysLeft(new Date(a.birthdate)) - getDaysLeft(new Date(b.birthdate)));
     const displayed = birthdays.slice(0, maxItems);
 
@@ -89,7 +72,7 @@ function render() {
             row.innerHTML = `
                 <td>${b.name}</td>
                 <td>${age}</td>
-                <td>${birthDate.toLocaleDateString(language || "en", { day:"2-digit", month:"long" })}</td>
+                <td>${birthDate.toLocaleDateString(language, { day:"2-digit", month:"long" })}</td>
                 <td>${daysLeft===0?"🎂":daysLeft}</td>
                 <td><button onclick="editBirthday(${index})">Edit</button></td>
                 <td><button onclick="removeBirthday(${index})">Delete</button></td>
@@ -99,7 +82,7 @@ function render() {
     });
 }
 
-// Save birthdays
+// Save birthdays to backend
 async function save() {
     await fetch("/api/birthdays", {
         method:"POST",
@@ -108,7 +91,7 @@ async function save() {
     });
 }
 
-// Add birthday
+// Add new birthday
 function addBirthday() {
     const nameInput = document.getElementById("name");
     const birthdateInput = document.getElementById("birthdate");
@@ -124,14 +107,14 @@ function addBirthday() {
     birthdateInput.value = "";
 }
 
-// Remove birthday
+// Remove
 function removeBirthday(index){
     birthdays.splice(index,1);
     save();
     render();
 }
 
-// Edit birthday
+// Edit
 function editBirthday(index){
     editingIndex = index;
     render();
@@ -155,16 +138,15 @@ function saveEdit(index){
     render();
 }
 
-// Filter table
+// Live search/filter
 function filterList(){
     const search = document.getElementById("search").value.toLowerCase();
     birthdays.forEach((b,i)=>{
         const row = document.getElementById("list").children[i];
         if(!row) return;
-        const match = b.name.toLowerCase().includes(search);
-        row.style.display = match ? "" : "none";
+        row.style.display = b.name.toLowerCase().includes(search) ? "" : "none";
     });
 }
 
-// Init
+// Initialize
 load();
